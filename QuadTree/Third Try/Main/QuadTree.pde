@@ -35,28 +35,27 @@ class QuadTree {
   }
 
   ArrayList<Point> query(Rect range) {
-    ArrayList<Point> found = new ArrayList<Point>();
     if (!bounds.intersects(range)) {
       return null;
+    }
+    ArrayList<Point> found = new ArrayList<Point>();
+    if (divided) {
+      TL.query(range, found);
+      TR.query(range, found);
+      BL.query(range, found);
+      BR.query(range, found);
     } else {
-      if (divided) {
-        TL.query(range, found);
-        TR.query(range, found);
-        BL.query(range, found);
-        BR.query(range, found);
-      } else {
-        for (int i = 0; i < points.size(); i++) {
-          Point p = points.get(i);
-          if (range.contains(p)) {
-            found.add(p);
-          }
+      for (int i = 0; i < points.size(); i++) {
+        Point p = points.get(i);
+        if (range.contains(p)) {
+          found.add(p);
         }
       }
     }
     return found;
   }
   ArrayList<Point> query(Rect range, ArrayList<Point> found) {
-     if (!bounds.intersects(range)) {
+    if (!bounds.intersects(range)) {
       return null;
     } else {
       if (divided) {
@@ -117,13 +116,13 @@ class QuadTree {
 
 class Rect {
   float x, y, w, h;
-  Rect(float x, float y, float w , float h) {
+  Rect(float x, float y, float w, float h) {
     this.x = x;
     this.y = y;
     this.w = w;
     this.h = h;
   }
-  
+
   void show() {
     pushMatrix();
     translate(x, y);
@@ -131,14 +130,14 @@ class Rect {
     rect(0, 0, w, h);
     popMatrix();
   }
-  
+
   boolean contains(Point p) {
-    return !(abs(p.x - x) > w || 
-             abs(p.y - y) > h);
+    return !(abs(p.x - x) > w ||
+      abs(p.y - y) > h);
   }
-  
+
   boolean intersects(Rect r) {
     return !(abs(x - r.x) > w + r.w ||
-             abs(y - r.y) > h + r.h);
+      abs(y - r.y) > h + r.h);
   }
 }

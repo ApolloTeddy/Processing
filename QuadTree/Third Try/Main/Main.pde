@@ -15,6 +15,7 @@ void setup() {
 }
 
 ArrayList<Point> withinSearch = new ArrayList<Point>();
+
 void draw() {
   background(100);
   search.x = mouseX; search.y = mouseY;
