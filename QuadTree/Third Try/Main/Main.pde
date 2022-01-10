@@ -20,12 +20,17 @@ void draw() {
   background(100);
   search.x = mouseX; search.y = mouseY;
   withinSearch = qTree.query(search);
+  stroke(90);
   qTree.show();
+  stroke(0);
+  search.show();
+  stroke(0, 100, 0);
   int s = withinSearch.size();
   for(int i = 0; i < s; i++) {
     Point cur = withinSearch.get(i);
     cur.show();
   }
+  text(int(frameRate), 10, 20);
 }
 
 void mousePressed() {

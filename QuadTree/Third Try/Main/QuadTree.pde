@@ -126,7 +126,6 @@ class Rect {
   void show() {
     pushMatrix();
     translate(x, y);
-    stroke(90);
     rect(0, 0, w, h);
     popMatrix();
   }
