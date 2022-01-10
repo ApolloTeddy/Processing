@@ -4,10 +4,10 @@ PeasyCam cam;
 
 ArrayList<Mover> mvrs;
 
-int count = 150;
+int count = 550;
 
 void setup() {
-  size(600, 600, P3D);
+  size(900, 900, P3D);
   
   stroke(30);
   strokeWeight(2);
@@ -25,9 +25,9 @@ void draw() {
   background(100);
   box(width, height, width);
   for(Mover mvr : mvrs) {
-    mvr.applyForce(mvr.alignment(mvrs, 60));
-    mvr.applyForce(mvr.cohesion(mvrs, 85));
-    mvr.applyForce(mvr.separation(mvrs, 55));
+    mvr.applyForce(mvr.alignment(mvrs, 60).mult(.9));
+    mvr.applyForce(mvr.cohesion(mvrs, 85).mult(.9));
+    mvr.applyForce(mvr.separation(mvrs, 55).mult(1.45));
     mvr.update();
     mvr.show();
   }
