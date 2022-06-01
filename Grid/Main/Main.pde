@@ -7,6 +7,7 @@ int rows = 9;
 
 void setup() {
   fullScreen();
+  frameRate(500);
   noStroke();
   cells = new Cell[width][height];
   generateCells();
@@ -62,11 +63,11 @@ class Cell {
   }
   
   void oscillate() {
-    angle += 0.02;
+    angle += 0.025;
   }
   
   void show() {
-    fill(127 + 127 * sin(this.angle));
+    fill(63.5 + 63.5 * sin(this.angle), 0, 127 + 63.5 * -sin(this.angle));
     rect(this.x, this.y, this.w, this.h);
   }
 }

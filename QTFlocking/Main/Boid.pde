@@ -1,8 +1,8 @@
 class Boid {
   PVector pos, vel, acc;
 
-  float maxspeed = 3;
-  float maxforce = 0.0875;
+  float maxspeed = 2;
+  float maxforce = 0.035;
   int r = 5;
 
   Boid() {
@@ -47,19 +47,11 @@ class Boid {
     this.show();
   }
 
-  PVector seek(PVector target) {
-    target.sub(this.pos);
-    target.setMag(this.maxspeed);
-    target.sub(this.vel);
-    target.limit(this.maxforce);
-
-    return target;
-  }
-
   PVector cohesion(Boid[] mvrs) {
-    PVector avg = new PVector();
+    PVector avg = new PVector(); //<>//
     int total = 0;
 
+    
     for(int i = 0; i < mvrs.length; i++) {
       Boid mvr = mvrs[i];
       if (mvr != this) {
@@ -107,7 +99,7 @@ class Boid {
       if (dist > 0) {
         PVector diff = PVector.sub(this.pos, mvr.pos);
         diff.normalize();
-        diff.div(dist);
+        diff.div(sq(dist));
         avg.add(diff);
       }
     }
@@ -126,9 +118,11 @@ class Boid {
     Boid[] sMvrs = qTree.query(new Circle(this.pos.x, this.pos.y, sP));
     Boid[] aMvrs = qTree.query(new Circle(this.pos.x, this.pos.y, aP));
     
-    PVector coh = this.cohesion(cMvrs).mult(cS);
-    PVector sep = this.separation(sMvrs).mult(sS);
-    PVector ali = this.alignment(aMvrs).mult(aS);
+    PVector coh = new PVector(), sep = new PVector(), ali = new PVector();
+    
+    if(cMvrs != null) coh = this.cohesion(cMvrs).mult(cS);
+    if(sMvrs != null) sep = this.separation(sMvrs).mult(sS);
+    if(aMvrs != null) ali = this.alignment(aMvrs).mult(aS);
 
     this.applyForce(coh);
     this.applyForce(sep);

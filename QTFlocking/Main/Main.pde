@@ -5,7 +5,9 @@ void setup() {
   size(800, 800);
   noFill();
   flock = new Flock();
-  flock.flockSize(15);
+  flock.flockSize(1050);
+  flock.treeCap(8);
+  flock.showTree(false);
 }
 
 void draw() {

@@ -1,35 +1,29 @@
-import java.util.LinkedList;
 import java.util.Arrays;
 
-float time, dx, accel = 1, spacing = 20; // increase accel if you want. if you decrease it you'll get bad results.
-int maxH = 1; // maximum number of harmonics to generate the fourier series
+float time, dx, spacing = 20; // increase accel if you want. if you decrease it you'll get bad results. Spacing is the minimum distance between two drawn points
+int maxH = 1; // maximum number of harmonics to generate the fourier series.
 
-boolean start = false, paint = false, trace = false;
+float hWid, hHei; // constants for width/2 and height/2
+
+boolean start = false;
 ArrayList<PVector> input;
-LinkedList<PVector> tracer;
 fCoef[] path;
 
-class fCoef { // class to store frequency of the coefficients.
+class fCoef { // class to store frequency of the coefficients. storing the values in class instead of calculating in our loop is more efficient
   float x, y, am, ph;
   int fr;
+
   fCoef(PVector c, int freq) {
     x = c.x;
     y = c.y;
     fr = freq;
   }
-  void add(PVector c) {
-    x += c.x;
-    y += c.y;
-  }
-  void div(int k) {
-    x /= k;
-    y /= k;
-  }
-  void upd(int freq) {
-    am = sqrt(x*x + y*y);
-    ph = atan2(y, x);
-    fr = freq;
-  }
+
+  void add(PVector c) { x += c.x; y += c.y; } // Vector addition for the complex plane.
+
+  void div(int k) { x /= k; y /= k; } // Scalar division for real inputs.
+
+  void upd(int freq) { am = sqrt(x*x + y*y); ph = atan2(y, x); fr = freq; } // Updates the amplitude, phase, and frequency.
 
   public String toString() {
     return String.format("fr: %d | (%.3f + %.3fi) | am: %.3f | ph: %.3f", fr, x, y, am, ph);
@@ -41,80 +35,20 @@ fCoef[] DFT(ArrayList<PVector> x) { // https://en.wikipedia.org/wiki/Discrete_Fo
   fCoef[] f = new fCoef[N];
 
   for (int k = 0; k < N; k++) {
-    fCoef next = new fCoef(v(0, 0), 0);
+    fCoef next = new fCoef(new PVector(0, 0), 0);
 
-    for (int j = 0; j < N; j++) {
-      float theta = (TAU*k*j)/N;
-      PVector a = x.get(j), b = v(cos(theta), -sin(theta)); // X_n = sum_[N-1:n=0]x_n*e^-2PIkn
-      next.add(v(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x)); // complex number multiplication
-    }
-    next.div(N);
-    next.upd(k);
+    for (int j = 0; j < N; j++) { //                                                                              |
+      float theta = (TAU*k*j)/N; //                                                                               |
+      PVector a = x.get(j), b = new PVector(cos(theta), -sin(theta)); //                                          |                           |  a  |     b      |
+                                                                      //                                          |  X_n = 1/N * sum_[N-1:n=0]( x_n * e^-2PIkn/N )                             
+      next.add(new PVector(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x)); // complex number multiplication (x: re, y: im)|
+    } //                                                                                                          |
+    next.div(N); //                                                                                               |
+    
+    next.upd(k); // update the frequency, amplitude, and phase of our next value.
     f[k] = next;
   }
   return f;
-}
-
-PVector v(float x, float y) {
-  return new PVector(x, y);
-}
-
-void mousePressed() {
-  if (mouseButton == LEFT) {
-    if (!paint) {
-      path = DFT(input);
-      sortA(path, 0, path.length-1);
-
-      println(path.length);
-      for (fCoef f : path) println(f);
-
-      dx = TAU/path.length;
-      time = 0;
-      tracer.clear();
-      start = true;
-    }
-  }
-  if (mouseButton == RIGHT) {
-    start = false;
-    time = 0;
-    tracer.clear();
-    input.clear();
-  }
-  if (mouseButton == CENTER) {
-    start = false;
-    time = 0;
-    tracer.clear();
-  }
-}
-void mouseWheel(MouseEvent e) {
-  if (e.getCount() < 0 && maxH < path.length) {
-    maxH++;
-  } else if (e.getCount() > 0 && maxH > 1) {
-    maxH--;
-  }
-}
-void mouseDragged() {
-  PVector c = v(mouseX-width/2, mouseY-width/2), prev;
-  if(input.size() > 1) {
-    prev = input.get(input.size()-1);
-    if (mouseButton == CENTER && dist(prev.x, prev.y, c.x, c.y) > spacing) {
-      input.add(c);
-    }
-  } else if(mouseButton == CENTER) {
-    input.add(c);
-  }
-}
-void mouseReleased() {
-  if(mouseButton == CENTER) {
-    input.add(input.get(0));
-  }
-}
-
-void paint() { // handle drawing input
-  if (mouseButton == LEFT) {
-    PVector pos = v(mouseX-width/2, mouseY-height/2);
-    input.add(pos);
-  }
 }
 
 void fourier() { // rendering the fourier series
@@ -122,40 +56,21 @@ void fourier() { // rendering the fourier series
     int N = path.length;
     float x = 0, y = 0;
     for (int i = 0; i < N && i < maxH; i++) {
-      float dx = x, dy = y;
       fCoef c = path[i];
-      float amp = c.am, pha = c.ph, fr = c.fr;
+      float dx = x, dy = y, amp = c.am, pha = c.ph, fr = c.fr;
 
-      x += amp*cos(pha+accel*fr*time);
-      y += amp*sin(pha+accel*fr*time);
+      x += amp*cos(pha+fr*time);
+      y += amp*sin(pha+fr*time);
 
       strokeWeight(1);
       circle(dx, dy, amp*2);
-      
+
       strokeWeight(4);
       point(dx, dy);
     }
-
-    push();
-    fill(0);
-    text(maxH + " Harmonics", 0, -height/2+20);
-    text(String.format("Path length: %d\nTime: %.3f\ndx: 2π/%d", N, time, N), -width/2+10, -height/2+20);
-    pop();
-
-    
-    if(trace) {
-      tracer.push(new PVector(x, y));
-      strokeWeight(4);
-      beginShape();
-      for (PVector p : tracer) {
-        vertex(p.x, p.y);
-      }
-      endShape();
-    }
-    
     strokeWeight(3);
     beginShape();
-    for (float t = 0; t < TAU; t += dx) {
+    for (float t = 0; t < TAU; t += dx) { // Rendering it's path
       float x2 = 0, y2 = 0;
       for (int i = 0; i < N && i < maxH; i++) {
         fCoef c = path[i];
@@ -167,7 +82,7 @@ void fourier() { // rendering the fourier series
       vertex(x2, y2);
     }
     endShape();
-    
+
     push();
     stroke(255);
     strokeWeight(5);
@@ -177,105 +92,88 @@ void fourier() { // rendering the fourier series
     if (time > TAU) {
       if (maxH < N) maxH++;
       time = 0;
-      tracer.clear();
     }
 
     time += dx;
   } else {
-    int N = input.size();
-    
-    push();
+    push(); // Cosmetic stuff
     strokeWeight(3);
     stroke(90);
-    for(int x = -width/2; x < width/2; x+=width/20) {
-      line(x, -height/2, x, height/2);
-    }
-    for(int y = -height/2; y < height/2; y+=height/20) {
-      line(-width/2, y, width/2, y);
-    }
-    
-    fill(0);
-    text(maxH + " Harmonics", 0, -height/2+20);
-    text(String.format("Path length: %d\nTime: %.3f\ndx: 2π/%d\nDrawing mode: %b", N, time, N, paint), -width/2+10, -height/2+20);
+    for (float x = -hWid; x < hWid; x+=width/60) line(x, -hHei, x, hHei);
+    for (float y = -hHei; y < hHei; y+=height/60) line(-hWid, y, hWid, y);
 
     stroke(255);
     strokeWeight(5);
     point(0, 0);
-    
+
+    stroke(127);
+    strokeWeight(10); // rendering input points
+    for (PVector p : input) point(p.x, p.y);
     pop();
   }
+  push();
+  fill(0);
+  text(maxH + " Harmonics", 0, -hHei+20);
+  text(String.format("Path length: %d\nTime: %.3f\ndx: 2π/%d\nDrawing mode: %b", input.size(), time, input.size()*2, !start), -hWid+10, -hWid+20);
+  pop();
 }
 
+void mousePressed() {
+  if (mouseButton == CENTER) {
+    path = DFT(input);
+    sortA(path, 0, path.length-1);
+
+    time = 0;
+
+    if(key == SHIFT) input.add(new PVector(mouseX-hWid, mouseY-hHei));
+
+    dx = TAU/path.length;
+    start = !start;
+  }
+  if (mouseButton == RIGHT && !start) input.clear();
+}
+void mouseWheel(MouseEvent e) {
+  if(maxH > input.size()) maxH = input.size()-1;
+  
+  if (e.getCount() < 0 && maxH < input.size()) maxH++;
+  else if (e.getCount() > 0 && maxH > 1) maxH--;
+}
+void mouseDragged() {
+  if (!start) {
+    PVector c = new PVector(mouseX-hWid, mouseY-hHei), prev;
+
+    if(mouseButton == LEFT) // handles input painting
+      if (input.size() > 0) {
+        prev = input.get(input.size()-1);
+        if (dist(prev.x, prev.y, c.x, c.y) > spacing) {
+          input.add(c);
+        }
+      } else input.add(c); 
+  }
+}
 void setup() {
   size(900, 900);
+  hWid = width/2;
+  hHei = height/2;
+
   noFill();
 
-  tracer = new LinkedList<PVector>();
   input = new ArrayList<>();
   path = new fCoef[0];
 
-  //default circle
-  /*
-  for(float i = 0; i < TAU*4; i+=TAU/75) {
-   float d = map(i, 0, TAU*4, 0, height/2);
-   input.add(v(d*cos(i), d*sin(i)));
-   }
-   for(float i = TAU*4; i < TAU*8; i+=TAU/75) {
-   float d = map(i, TAU*4, TAU*8, height/2, 0);
-   input.add(v(d*cos(i), d*sin(i)));
-   }
-   */
-
-  for (float x = -width/4; x < width/4; x+=10) {
-    input.add(v(x, height/4));
-  }
-  for (float y = height/4; y > -height/4; y-=10) {
-    input.add(v(width/4, y));
-  }
-  for (float x = width/4; x > -width/4; x-=10) {
-    input.add(v(x, -height/4));
-  }
-  for (float y = -height/4; y < height/4; y+=10) {
-    input.add(v(-width/4, y));
-  }
+  float w = width/4, h = height/4; // starting box
+  for (float x = -w; x < w; x+=10) input.add(new PVector(x, h));
+  for (float y = h; y > -h; y-=10) input.add(new PVector(w, y));
+  for (float x = w; x > -w; x-=10) input.add(new PVector(x, -h));
+  for (float y = -h; y < h; y+=10) input.add(new PVector(-w, y));
 }
-
 void draw() {
   background(70);
-  translate(width/2, height/2);
-
-  if (paint) paint();
+  translate(hWid, hHei);
 
   fourier();
-
-  if (!start) {
-    strokeWeight(10);
-    for (PVector p : input) {
-      point(p.x, p.y);
-    }
-  }
 }
 
-//quicksort
-void swap(fCoef[] arr, int a, int b) {
-  fCoef tmp = arr[a];
-  arr[a] = arr[b];
-  arr[b] = tmp;
-}
-int partition(fCoef[] arr, int low, int high) {
-  fCoef p = arr[high];
-
-  int i = low-1;
-
-  for (int j = low; j < high; j++) {
-    if (arr[j].am > p.am) {
-      i++;
-      swap(arr, i, j);
-    }
-  }
-  swap(arr, i+1, high);
-  return i+1;
-}
 void sortA(fCoef[] arr, int low, int high) {
   if (low < high) {
     int ind = partition(arr, low, high);
@@ -283,4 +181,22 @@ void sortA(fCoef[] arr, int low, int high) {
     sortA(arr, low, ind-1);
     sortA(arr, ind+1, high);
   }
+}
+int partition(fCoef[] arr, int low, int high) { // quicksort
+  fCoef p = arr[high];
+
+  int i = low-1;
+
+  for (int j = low; j < high; j++)
+    if (arr[j].am > p.am) {
+      i++;
+      swap(arr, i, j);
+    }
+  swap(arr, i+1, high);
+  return i+1;
+}
+void swap(fCoef[] arr, int a, int b) {
+  fCoef tmp = arr[a];
+  arr[a] = arr[b];
+  arr[b] = tmp;
 }
