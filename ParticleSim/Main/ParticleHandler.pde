@@ -2,6 +2,17 @@ static boolean validVector(float Fx, float Fy, float check) {
     return Fx*Fx + Fy*Fy < check*check;
 }
 
+public static float invSqrt(float x) {
+    float xhalf = 0.5f * x;
+    int i = Float.floatToIntBits(x);
+    
+    i = 0x5f3759df - (i >> 1);
+    x = Float.intBitsToFloat(i);
+    
+    x *= (1.5f - xhalf * x * x);
+    return x;
+}
+
 class Particle {
   float Tx, Ty; // Temp values to store the original x and y positions of a particle for the reset.
   
@@ -13,13 +24,14 @@ class Particle {
        expireTime;
   
   //Settings
-  boolean SpawnPositionJitter = true,
+  boolean SpawnPositionJitter = false,
           LifetimeJitter = true,
           StartingVelocity = true,
           RespawnAfterExpire = true,
-          LimitParticleForce = true; // Makes it so you cant pull something to terminal velocity instantly (caps acceleration).
+          LimitParticleForce = true, 
+          ExpireParticle = true; // Makes it so you cant pull something to terminal velocity instantly (caps acceleration).
           
-  float LowerSpawnVelAmpBound = 1, HigherSpawnVelAmpBound = 3,
+  float LowerSpawnVelAmpBound = 2, HigherSpawnVelAmpBound = 4,
   
         LowerLifetimeBound = 2, HigherLifetimeBound = 5,
         
@@ -27,9 +39,9 @@ class Particle {
         
         ParticleDampening = .01,
         ParticleLifetime = 3,
-        ParticleMass = 1,
-        ParticleMaxSpeed = 10,
-        ParticleMaxForce = 10; // Terminal velocity
+        ParticleMass = 4,
+        ParticleMaxSpeed = 8,
+        ParticleMaxForce = 3; // Terminal velocity
   
   
   Particle(float x, float y) {
@@ -48,9 +60,9 @@ class Particle {
     if(LifetimeJitter) ParticleLifetime = random(LowerLifetimeBound, HigherLifetimeBound);
   }
   Particle() {
-    Tx = x; Ty = y;
-    
     x = random(width); y = random(height);
+
+    Tx = x; Ty = y;
 
     if(StartingVelocity) {
       float t = random(TAU), a = random(LowerSpawnVelAmpBound, HigherSpawnVelAmpBound);
@@ -64,11 +76,11 @@ class Particle {
   }
   
   void reset() {
-    float t = random(TAU), a = random(LowerSpawnVelAmpBound, HigherSpawnVelAmpBound);
+    float t = random(TAU), a = random(LowerSpawnVelAmpBound, HigherSpawnVelAmpBound); //<>//
     
     if(SpawnPositionJitter) {
-      x = Tx - PositionJitterRadius * sin(t);
-      y = Ty + PositionJitterRadius * cos(t);
+      x = Tx - random(-PositionJitterRadius, PositionJitterRadius) * sin(t);
+      y = Ty + random(-PositionJitterRadius, PositionJitterRadius) * cos(t);
       Tx = x;
       Ty = y;
     } else {
@@ -89,7 +101,7 @@ class Particle {
     ax += Fx / ParticleMass;
     ay += Fy / ParticleMass;
   }
-  void addForce(float Fx, float Fy, float amp) { //<>// //<>//
+  void addForce(float Fx, float Fy, float amp) { //<>//
     ax += (Fx * amp) / ParticleMass;
     ay += (Fy * amp) / ParticleMass;
   }
@@ -118,6 +130,13 @@ class PartiParty {
       float Fx = mouseX - pati.x, // From pati, to the mouseX.
             Fy = mouseY - pati.y; // Same for the mouseY.
       
+      if(!validVector(Fx, Fy, pati.ParticleMaxForce)) {
+        float d = invSqrt(Fx*Fx + Fy*Fy);
+        
+        Fx *= d;
+        Fy *= d;
+      }
+      
       pati.addForce(Fx, Fy, strength);
     }
   }
@@ -128,10 +147,10 @@ class PartiParty {
             Dy = Py - pati.y;
       
       if(!validVector(Dx, Dy, pati.ParticleMaxForce)) {
-        float t = atan(Dy / Dx);
-      
-        Dy = pati.ParticleMaxForce * cos(t);
-        Dx = pati.ParticleMaxForce * sin(t);
+        float d = invSqrt(Dx*Dx + Dy*Dy);
+        
+        Dx *= d;
+        Dy *= d;
       }
       
       pati.addForce(Dx, Dy);
@@ -164,14 +183,14 @@ class PartiParty {
       pati.vy += pati.ay;
       
       if(!validVector(pati.vx, pati.vy, pati.ParticleMaxSpeed)) {
-        float t = atan(pati.vy / pati.vx);
-      
-        pati.vx = pati.ParticleMaxSpeed * cos(t);
-        pati.vy = pati.ParticleMaxSpeed * sin(t);
+        float d = invSqrt(pati.vx*pati.vx + pati.vy*pati.vy);
+        
+        pati.vx *= d;
+        pati.vy *= d;
       }
       
-      pati.vx *= (1-pati.ParticleDampening);
-      pati.vy *= (1-pati.ParticleDampening);
+      //pati.vx *= (1-pati.ParticleDampening);
+      //pati.vy *= (1-pati.ParticleDampening);
       
       pati.x += pati.vx; 
       pati.y += pati.vy;
@@ -179,7 +198,7 @@ class PartiParty {
       pati.ax = 0; 
       pati.ay = 0;
       
-      if(System.nanoTime() > pati.expireTime) {
+      if(pati.ExpireParticle && System.nanoTime() > pati.expireTime) {
         if(pati.RespawnAfterExpire) pati.reset();
         else pati = null;
       }

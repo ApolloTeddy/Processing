@@ -3,16 +3,19 @@ PartiParty party;
 void setup() {
   size(600, 600);
   party = new PartiParty();
-  
-  party.pushPati(width/2, height/2, 600);
 }
 
+
+boolean spawning = true;
 void draw() {
-  background(50);
-   
-  party.follow(width/2, height/2);
+  if(spawning) {
+    party.pushPati(width/2, height/2, 5);
+    if(party.patiCount > 1000) spawning = false;
+  }
   
-  party.printAverageHeading();
+  background(50);
+  
+  party.followCursor(1);
   
   party.updatePositions();
   party.showParty();
