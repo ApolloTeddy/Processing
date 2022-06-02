@@ -24,24 +24,25 @@ class Particle {
        expireTime;
   
   //Settings
-  boolean SpawnPositionJitter = false,
+  boolean SpawnPositionJitter = true,
           LifetimeJitter = true,
           StartingVelocity = true,
           RespawnAfterExpire = true,
-          LimitParticleForce = true, 
-          ExpireParticle = true; // Makes it so you cant pull something to terminal velocity instantly (caps acceleration).
+          LimitParticleForce = true, // Makes it so you cant pull something to terminal velocity instantly (caps acceleration).
+          ExpireParticle = true,
+          Dampening = true; 
           
-  float LowerSpawnVelAmpBound = 2, HigherSpawnVelAmpBound = 4,
+  float LowerSpawnVelAmpBound = 1, HigherSpawnVelAmpBound = 300,
   
-        LowerLifetimeBound = 2, HigherLifetimeBound = 5,
+        LowerLifetimeBound = 1, HigherLifetimeBound = 2,
         
         PositionJitterRadius = 30,
         
-        ParticleDampening = .01,
+        ParticleDampening = 5, // Given in a percentage, from 0 to 100.
         ParticleLifetime = 3,
-        ParticleMass = 4,
-        ParticleMaxSpeed = 8,
-        ParticleMaxForce = 3; // Terminal velocity
+        ParticleMass = 400,
+        ParticleMaxSpeed = 30, // max velocity
+        ParticleMaxForce = 1; // max acceleration
   
   
   Particle(float x, float y) {
@@ -81,8 +82,6 @@ class Particle {
     if(SpawnPositionJitter) {
       x = Tx - random(-PositionJitterRadius, PositionJitterRadius) * sin(t);
       y = Ty + random(-PositionJitterRadius, PositionJitterRadius) * cos(t);
-      Tx = x;
-      Ty = y;
     } else {
       x = Tx;
       y = Ty;
@@ -128,10 +127,11 @@ class PartiParty {
   void followCursor(float strength) {
     for(var pati : party) {
       float Fx = mouseX - pati.x, // From pati, to the mouseX.
-            Fy = mouseY - pati.y; // Same for the mouseY.
+            Fy = mouseY - pati.y, // Same for the mouseY.
+            mF = pati.ParticleMaxForce;
       
-      if(!validVector(Fx, Fy, pati.ParticleMaxForce)) {
-        float d = invSqrt(Fx*Fx + Fy*Fy);
+      if(!validVector(Fx, Fy, mF)) {
+        float d = invSqrt(Fx*Fx + Fy*Fy) * mF;
         
         Fx *= d;
         Fy *= d;
@@ -182,15 +182,20 @@ class PartiParty {
       pati.vx += pati.ax; 
       pati.vy += pati.ay;
       
-      if(!validVector(pati.vx, pati.vy, pati.ParticleMaxSpeed)) {
-        float d = invSqrt(pati.vx*pati.vx + pati.vy*pati.vy);
+      float mS = pati.ParticleMaxSpeed;
+      
+      if(!validVector(pati.vx, pati.vy, mS)) {
+        float d = invSqrt(pati.vx*pati.vx + pati.vy*pati.vy) * mS;
         
         pati.vx *= d;
         pati.vy *= d;
       }
       
-      //pati.vx *= (1-pati.ParticleDampening);
-      //pati.vy *= (1-pati.ParticleDampening);
+      if(pati.Dampening) {
+        float dampCoef = (1-pati.ParticleDampening/100);
+        pati.vx *= dampCoef;
+        pati.vy *= dampCoef;
+      }
       
       pati.x += pati.vx; 
       pati.y += pati.vy;
