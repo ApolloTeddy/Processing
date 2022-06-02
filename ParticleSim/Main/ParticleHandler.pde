@@ -38,7 +38,7 @@ class Particle {
         
         PositionJitterRadius = 30,
         
-        ParticleDampening = 5, // Given in a percentage, from 0 to 100.
+        ParticleDampening = 50, // Given in a percentage, from 0 to 100.
         ParticleLifetime = 3,
         ParticleMass = 400,
         ParticleMaxSpeed = 30, // max velocity
