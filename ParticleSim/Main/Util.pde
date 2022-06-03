@@ -10,5 +10,7 @@ public static float invSqrt(float x) {
     x = Float.intBitsToFloat(i);
     
     x *= (1.5f - xhalf * x * x);
+    x *= (1.5f - xhalf * x * x);
+    
     return x;
 }

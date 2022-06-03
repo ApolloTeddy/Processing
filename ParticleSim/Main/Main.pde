@@ -1,37 +1,57 @@
 PartiParty party;
 
-int partySize = 1000;
+int partySize = 1250;
 
-boolean input = false;
+boolean input = true;
 
 void setup() {
-  size(600, 600);
+  size(800, 800);
+  
   party = new PartiParty();
-  party.LowSpawnMassBound = 10;
-  party.HighSpawnMassBound = 20;
-  party.LowSpawnVelMagBound = 3;
-  party.HighSpawnVelMagBound = 7;
-  party.MaxForce = 1;
+  party.MaxForce = 1.75;
+  party.MaxSpeed = 17;
+  party.Expire = false;
+  party.Dampening = false;
+  party.RandomSpawnVel = false;
+  party.SpawnPosJitter = true;
+  party.DampeningPercent = .5;
+  party.SepRadius = 10;
+  party.SepStrength = 1;
+  party.LowSpawnMassBound = 4.75;
+  party.HighSpawnMassBound = 6.2;
 }
 
 
 boolean spawning = true;
-void draw() {
-  if(spawning) {
-    party.pushMembers(width/2, height/2, 5);
+void spawn() {
+  if(!spawning) return;
+  
+  party.pushMembers(width/2, height/2, 5);
     
-    if(party.members > partySize) {
-      println("Done spawning.");
-      spawning = false;
-    }
+  if(party.members > partySize) {
+    println("Done spawning.");
+    spawning = false;
   }
+}
+
+float theta = 0;
+float dx = PI/pow(2, 6.5);
+float r = 135;
+void draw() {
+  spawn();
+  
   if(input) input();
   background(50);
   
-  party.follow(width/2, height/2);
+  strokeWeight(5);
+  point(width/2 + r*cos(theta), height/2 + r*sin(theta));
+  
+  //party.follow(width/2 + r*cos(theta), height/2 + r*sin(theta));
   
   party.run();
   party.showParty();
+  
+  theta += dx;
 }
 
 void input() {

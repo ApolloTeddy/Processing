@@ -1,31 +1,36 @@
-/*
-  LimitPhysForce, true/false, Limits the magnitude of force vectors to be at most of length MaxForce.
+/* -- SETTINGS GUIDE -- *\
+  LimitPhysForce, boolean, Limits the magnitude of force vectors to be at most of length MaxForce.
     MaxForce, float
-  LimitPhysSpeed, true/false, Limits the maximum speed particles can travel at to MaxSpeed.
+  LimitPhysSpeed, boolean, Limits the maximum speed particles can travel at to MaxSpeed.
     MaxSpeed, float
   Mass, float
-    RandomSpawnMass, true/false, Spawns particles with a random mass in the range [LowSpawnMassBound - HighSpawnMassBound].
+    RandomSpawnMass, boolean, Spawns particles with a random mass in the range [LowSpawnMassBound - HighSpawnMassBound].
       LowSpawnMassBound, float
       HighSpawnMassBound, float
-  Dampening, true/false, Slowly slows down particles. Every update, the velocity vector is shortened by DampeningPercent percent, with the formula (1-DampeningPercent*0.01).
+  Dampening, boolean, Slowly slows down particles. Every update, the velocity vector is shortened by DampeningPercent percent, with the formula (1-DampeningPercent*0.01).
     DampeningPercent, float, given in the range [0 - 100]. The value put into the dampening formula is the actual percent value (i.e. 1 -> 0.01).
-  RandomSpawnVel, true/false, Spawns particles with a random velocity with a magnitude in the range [LowSpawnVelMagBound - HighSpawnVelMagBound].
-    LowSpawnVelMagBound, float
+  RandomSpawnVel, boolean, Spawns particles with a random velocity with a magnitude in the range [LowSpawnVelMagBound - HighSpawnVelMagBound].
+    LowSpawnVelMagBound, float 
     HighSpawnVelMagBound, float
-  Expire, true/false, Sets particles to expire after Lifetime is exceeded.
+  Expire, boolean, Sets particles to expire after Lifetime is exceeded.
     Lifetime, float
-      RandomLifetime, true/false, Spawns particles with a random lifetime in the range [LowLifetimeBound - HighLifetimeBound].
+      RandomLifetime, boolean, Spawns particles with a random lifetime in the range [LowLifetimeBound - HighLifetimeBound].
         LowLifetimeBound, float
         HighLifetimeBound, float
-    RespawnAfterExpire, true/false, Respawns particles after expiry.
-      SpawnPosJitter, true/false, Spawn location of particles is slightly altered in the radius of SpawnPosJitterRadius every spawn.
+    RespawnAfterExpire, boolean, Respawns particles after expiry.
+      SpawnPosJitter, boolean, Spawn location of particles is slightly altered in the radius of SpawnPosJitterRadius every spawn.
         SpawnPosJitterRadius, float
-      DelayRespawn, true/false, Delays respawning the particle until after RespawnTime has elapsed.
+      DelayRespawn, boolean, Delays respawning the particle until after RespawnTime has elapsed.
         RespawnDelay, float
-        RandomRespawnDelay, true/false, Respawns particles after a random amount of time in the range [LowRespawnTimeBound - HighRespawnTimeBound] each expiry.
-          LowRespawnDelayBound, float
-          HighRespawnDelayBound, float
-*/
+        RandomRespawnDelay, boolean, Respawns particles after a random amount of time in the range [LowRespawnTimeBound - HighRespawnTimeBound] each expiry.
+          LowRespDelayBound, float
+          HighRespDelayBound, float
+  Separate, boolean, Tries to separate the particles from each other a distance SepRadius apart with strength SepStrength.
+    SepStrength, float
+    SepRadius, float
+\*                      */
+
+// Particle class
 
 class Particle {
   float Tx, Ty; // Temp values to store the original x and y positions of a particle for the reset.
@@ -43,7 +48,15 @@ class Particle {
   
   Particle(PartiParty parent, float x, float y) {
     Party = parent;
-    this.x = x; this.y = y;
+    if(Party.SpawnPosJitter) {
+      float r = Party.SpawnPosJitterRadius;
+      
+      this.x = x + random(-r, r);
+      this.y = y + random(-r, r);
+    } else {
+      this.x = x;
+      this.y = y;
+    }
     Tx = x; Ty = y;
     init();
   }
@@ -77,7 +90,7 @@ class Particle {
     }
   }
   
-  private void reset() { //<>// //<>//
+  private void reset() { //<>//
     if(Party.SpawnPosJitter) {
       float r = Party.SpawnPosJitterRadius;
       
@@ -91,8 +104,36 @@ class Particle {
     init();
   }
   
+  void forces() {
+    if(Party.Separate) { // This has to stop, needs to be fixed big time //<>//
+      Particle[] others = Party.query(x, y, Party.SepRadius);
+      if(others.length == 0) return;
+      
+      float avx = 0, avy = 0;
+      for(var other : others) {
+        float dx = x - other.x, dy = y - other.y,
+              sqdist = dx*dx + dy*dy;
+        
+        dx /= sqdist; dy /= sqdist;
+        avx += dx; avy += dy;
+      }
+      float d = invSqrt(avx*avx + avy*avy) * Party.MaxSpeed;
+      
+      avx *= d; avy *= d;
+      avx -= vx; avy -= vy;
+      
+      if(!validVector(avx, avy, Party.MaxForce)) {
+        d = invSqrt(avx*avx + avy*avy) * Party.MaxForce;
+        avx *= d; avy *= d;
+      }
+      
+      addForce(avx, avy);
+    }
+  }
+  
   void updatePosition() {
     vx += ax; vy += ay;
+    forces();
     
     if(Party.LimitPhysSpeed && !validVector(vx, vy, Party.MaxSpeed)) {
       float d = invSqrt(vx*vx + vy*vy) * Party.MaxSpeed;
@@ -100,14 +141,14 @@ class Particle {
       vx *= d; vy *= d;
     }
     
-    x += vx; y += vy;
-    ax = 0; ay = 0;
-    
     if(Party.Dampening) {
       float d = (1-Party.DampeningPercent*0.01);
       
       vx *= d; vy *= d;
     }
+    
+    x += vx; y += vy;
+    ax = 0; ay = 0;
     
     if(Party.Expire && System.nanoTime() > expireTime) {
         if(Party.RespawnAfterExpire) reset();
@@ -115,27 +156,27 @@ class Particle {
       }
   }
   
-  void addForce(float Fx, float Fy) {
-    if(Party.LimitPhysForce && !validVector(Fx, Fy, Party.MaxForce)) {
-      float d = invSqrt(Fx*Fx + Fy*Fy) * Party.MaxForce;
+  void addForce(float fx, float fy) {
+    if(Party.LimitPhysForce && !validVector(fx, fy, Party.MaxForce)) {
+      float d = invSqrt(fx*fx + fy*fy) * Party.MaxForce;
       
-      Fx *= d;
-      Fy *= d;
+      fx *= d;
+      fy *= d;
     }
     
-    ax += Fx / mass;
-    ay += Fy / mass;
+    ax += fx / mass;
+    ay += fy / mass;
   }
-  void addForce(float Fx, float Fy, float amp) { //<>// //<>//
-    if(Party.LimitPhysForce && !validVector(Fx, Fy, Party.MaxForce)) {
-      float d = invSqrt(Fx*Fx + Fy*Fy) * Party.MaxForce;
+  void addForce(float fx, float fy, float amp) { //<>// //<>//
+    if(Party.LimitPhysForce && !validVector(fx, fy, Party.MaxForce)) {
+      float d = invSqrt(fx*fx + fy*fy) * Party.MaxForce;
       
-      Fx *= d;
-      Fy *= d;
+      fx *= d;
+      fy *= d;
     }
     
-    ax += (Fx * amp) / mass;
-    ay += (Fy * amp) / mass;
+    ax += (fx * amp) / mass;
+    ay += (fy * amp) / mass;
   }
 }
 
@@ -150,26 +191,29 @@ class PartiParty {
           SpawnPosJitter = false,
           DelayRespawn = false,
           RandomLifetime = true,
-          RandomRespawnTime = false,
+          RandomRespawnDelay = false,
           RandomSpawnMass = true,
-          RandomSpawnVel = true;
+          RandomSpawnVel = true,
+          Separate = true;
   float MaxForce = 1,
         MaxSpeed = 10,
         Mass = 5,
-        DampeningPercent = 5,
+        DampeningPercent = 1,
         LowSpawnVelMagBound = 2,
         HighSpawnVelMagBound = 5,
         Lifetime = 0.1,
         LowLifetimeBound = 1,
         HighLifetimeBound = 5,
         SpawnPosJitterRadius = 25,
-        RespawnTime = 0.2,
-        LowRespawnTimeBound = 0,
-        HighRespawnTimeBound = 1,
+        RespawnDelay = 0.2,
+        LowRespDelayBound = 0,
+        HighRespDelayBound = 1,
         LowSpawnMassBound = 4,
-        HighSpawnMassBound = 15;
+        HighSpawnMassBound = 15,
+        SepStrength = 1,
+        SepRadius = 10;
   
-  ArrayList<Particle> party = new ArrayList();
+  ArrayList<Particle> party = new ArrayList<Particle>();
   int members = 0;
   
   void showParty() {
@@ -236,6 +280,25 @@ class PartiParty {
     Ax /= size; Ay /= size;
     
     println("\n\n\nV: (" + Vx + ", " + Vy + ")\nA: (" + Ax + ", " + Ay + ")");
+  }
+  
+  Particle[] query(float x, float y, float r) {
+    ArrayList<Particle> tmp = new ArrayList<Particle>();
+    Particle[] out;
+    
+    for(var member : party) {
+      float dx = x - member.x, dy = y - member.y;
+      if(dx + dy == 0) continue;
+      
+      if(validVector(dx, dy, r)) tmp.add(member);
+    }
+    
+    out = new Particle[tmp.size()];
+    for(int i = 0; i < tmp.size(); i++) {
+      out[i] = tmp.get(i);
+    }
+    
+    return out;
   }
   
   // Implement key spawn locations eventually
