@@ -1,24 +1,28 @@
 PartiParty party;
 
-int partySize = 1250;
+int partySize = 800;
 
 boolean input = true;
 
 void setup() {
-  size(800, 800);
+  size(900, 900);
   
   party = new PartiParty();
-  party.MaxForce = 1.75;
-  party.MaxSpeed = 17;
+  party.MaxForce = 3;
+  party.MaxSpeed = 12;
+  party.Separate = true;
   party.Expire = false;
   party.Dampening = false;
   party.RandomSpawnVel = false;
+  party.LowSpawnVelMagBound = 0; // REOMOVE HIGH/LOW BOUNDS, ADD VARIANCE INSTEAD
+  party.HighSpawnVelMagBound = 2;
   party.SpawnPosJitter = true;
-  party.DampeningPercent = .5;
-  party.SepRadius = 10;
-  party.SepStrength = 1;
-  party.LowSpawnMassBound = 4.75;
-  party.HighSpawnMassBound = 6.2;
+  party.SpawnPosJitterRadius = 8;
+  party.DampeningPercent = .05;
+  party.SepRadius = 1;
+  party.SepStrength = 2;
+  party.LowSpawnMassBound = 6.7;
+  party.HighSpawnMassBound = 7.7;
 }
 
 
@@ -46,7 +50,7 @@ void draw() {
   strokeWeight(5);
   point(width/2 + r*cos(theta), height/2 + r*sin(theta));
   
-  //party.follow(width/2 + r*cos(theta), height/2 + r*sin(theta));
+  party.follow(width/2 + r*cos(theta), height/2 + r*sin(theta));
   
   party.run();
   party.showParty();
@@ -55,7 +59,7 @@ void draw() {
 }
 
 void input() {
-  if(mouseButton == LEFT) party.followCursor(1);
-  if(mouseButton == RIGHT) party.followCursor(-1);
+  if(mouseButton == LEFT) party.followCursor(.5);
+  if(mouseButton == RIGHT) party.followCursor(-.5);
   if(mouseButton == CENTER) party.pushMembers(mouseX, mouseY, 1);
 }

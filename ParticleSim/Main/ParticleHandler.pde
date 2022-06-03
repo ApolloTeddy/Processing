@@ -117,23 +117,19 @@ class Particle {
         dx /= sqdist; dy /= sqdist;
         avx += dx; avy += dy;
       }
-      float d = invSqrt(avx*avx + avy*avy) * Party.MaxSpeed;
+      float d = invSqrt(avx*avx + avy*avy) * Party.MaxForce;
       
       avx *= d; avy *= d;
       avx -= vx; avy -= vy;
-      
-      if(!validVector(avx, avy, Party.MaxForce)) {
-        d = invSqrt(avx*avx + avy*avy) * Party.MaxForce;
-        avx *= d; avy *= d;
-      }
       
       addForce(avx, avy);
     }
   }
   
   void updatePosition() {
-    vx += ax; vy += ay;
     forces();
+    
+    vx += ax; vy += ay;
     
     if(Party.LimitPhysSpeed && !validVector(vx, vy, Party.MaxSpeed)) {
       float d = invSqrt(vx*vx + vy*vy) * Party.MaxSpeed;
@@ -167,8 +163,8 @@ class Particle {
     ax += fx / mass;
     ay += fy / mass;
   }
-  void addForce(float fx, float fy, float amp) { //<>// //<>//
-    if(Party.LimitPhysForce && !validVector(fx, fy, Party.MaxForce)) {
+  void addForce(float fx, float fy, float amp) { //<>//
+    if(Party.LimitPhysForce && !validVector(fx, fy, Party.MaxForce)) { //<>//
       float d = invSqrt(fx*fx + fy*fy) * Party.MaxForce;
       
       fx *= d;
@@ -279,7 +275,7 @@ class PartiParty {
     Vx /= size; Vy /= size;
     Ax /= size; Ay /= size;
     
-    println("\n\n\nV: (" + Vx + ", " + Vy + ")\nA: (" + Ax + ", " + Ay + ")");
+    System.out.printf("\n\n\nV: (%d, %d)\nA: (%d, %d)", Vx, Vy, Ax, Ay);
   }
   
   Particle[] query(float x, float y, float r) {
@@ -287,7 +283,7 @@ class PartiParty {
     Particle[] out;
     
     for(var member : party) {
-      float dx = x - member.x, dy = y - member.y;
+      float dx = abs(x - member.x), dy = abs(y - member.y);
       if(dx + dy == 0) continue;
       
       if(validVector(dx, dy, r)) tmp.add(member);
