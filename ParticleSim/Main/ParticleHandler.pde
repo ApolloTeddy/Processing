@@ -90,7 +90,7 @@ class Particle {
     }
   }
   
-  private void reset() { //<>//
+  private void reset() {
     if(Party.SpawnPosJitter) {
       float r = Party.SpawnPosJitterRadius;
       
@@ -105,9 +105,9 @@ class Particle {
   }
   
   void forces() {
-    if(Party.Separate) { // This has to stop, needs to be fixed big time //<>//
+    if(Party.Separate) { // This has to stop, needs to be fixed big time
       Particle[] others = Party.query(x, y, Party.SepRadius);
-      if(others.length == 0) return;
+      if(others == null) return;
       
       float avx = 0, avy = 0;
       for(var other : others) {
@@ -122,7 +122,7 @@ class Particle {
       avx *= d; avy *= d;
       avx -= vx; avy -= vy;
       
-      addForce(avx, avy);
+      addForce(avx, avy, Party.SepStrength);
     }
   }
   
@@ -163,8 +163,8 @@ class Particle {
     ax += fx / mass;
     ay += fy / mass;
   }
-  void addForce(float fx, float fy, float amp) { //<>//
-    if(Party.LimitPhysForce && !validVector(fx, fy, Party.MaxForce)) { //<>//
+  void addForce(float fx, float fy, float amp) {
+    if(Party.LimitPhysForce && !validVector(fx, fy, Party.MaxForce)) {
       float d = invSqrt(fx*fx + fy*fy) * Party.MaxForce;
       
       fx *= d;
@@ -212,14 +212,13 @@ class PartiParty {
   ArrayList<Particle> party = new ArrayList<Particle>();
   int members = 0;
   
+  PQTree tree = new PQTree(width/2, height/2, width/2, 25);
+  
   void showParty() {
     push();
     strokeWeight(5);
- 
+    stroke(203);
     for(var member : party) {
-      stroke(map(member.x, 0, width/2, 0, 255),
-             map(member.y, 0, height/2, 0, 255),
-             map(member.y, 0, height/2, 255/2, 0));
       point(member.x, member.y);
     }
     
@@ -233,23 +232,25 @@ class PartiParty {
   }
   
   void run() {
+    tree.buildTree(party);
     for(int i = 0; i < party.size(); i++) {
       Particle member = party.get(i);
       member.updatePosition();
       
       if(member.expire) {
         party.remove(i);
+        tree.buildTree(party);
         i--;
       }
     }
   }
   
-  void followCursor(float strength) {
+  void followCursor(float amp) {
     for(var member : party) {
       float Fx = mouseX - member.x,
             Fy = mouseY - member.y;
       
-      member.addForce(Fx, Fy, strength);
+      member.addForce(Fx, Fy, amp);
     }
   }
   
@@ -259,6 +260,14 @@ class PartiParty {
             Fy = Py - member.y;
       
       member.addForce(Fx, Fy);
+    }
+  }
+  void follow(float Px, float Py, float amp) {
+    for(var member : party) {
+      float Fx = Px - member.x,
+            Fy = Py - member.y;
+      
+      member.addForce(Fx, Fy, amp);
     }
   }
   
@@ -279,6 +288,7 @@ class PartiParty {
   }
   
   Particle[] query(float x, float y, float r) {
+    /*
     ArrayList<Particle> tmp = new ArrayList<Particle>();
     Particle[] out;
     
@@ -293,20 +303,23 @@ class PartiParty {
     for(int i = 0; i < tmp.size(); i++) {
       out[i] = tmp.get(i);
     }
+    */
     
-    return out;
+    //return tree.query(x, y, r); //<>//
   }
   
   // Implement key spawn locations eventually
   void pushMembers(float x, float y, int count) {
     for(var i = 0; i < count; i++) {
       party.add(new Particle(this, x, y));
+      //tree.buildTree(party);
       members++;
     }
   }
   void pushMembers(int count) {
     for(var i = 0; i < count; i++) {
       party.add(new Particle(this));
+      //tree.buildTree(party);
       members++;
     }
   }

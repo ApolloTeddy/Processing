@@ -1,213 +1,114 @@
+public static boolean validVector(float Fx, float Fy, float check) {
+    return Fx*Fx + Fy*Fy <= check*check;
+}
+
+static class Square {
+  // Represented as: x, y, h
+  
+  static boolean containsParticle(float sx, float sy, float h, Boid p) {
+    if(abs(p.pos.x - sx) > h || abs(p.pos.y - sy) > h) return false;
+    return true;
+  }
+  
+  static boolean intersectsSquare(float x1, float y1, float h1, float x2, float y2, float h2) {
+    if(abs(x1 - x2) > h1 + h2 || abs(y1 - y2) > h1 + h2) return false;
+    
+    return true;
+  }
+}
+
+static class Circle {
+  // Represented as: x, y, r
+  
+  static boolean containsParticle(float cx, float cy, float r, Boid p) {
+    return validVector(cx - p.pos.x, cy - p.pos.y, r);
+  }
+  
+  static boolean intersectsCircle(float x1, float y1, float r1, float x2, float y2, float r2) {
+    return validVector(x1 - x2, y1 - y2, r1 + r2);
+  }
+  
+  static boolean intersectsSquare(float x1, float y1, float r, float x2, float y2, float h) {
+    float dx = abs(x2 - x1), dy = abs(y2 - y1);
+    return validVector(max(dx - h, 0), max(dy - h, 0), r);
+  }
+}
+
 class QuadTree {
-  Rect bounds;
-  int capacity;
-  ArrayList<Boid> elements;
-  QuadTree NW, NE, SW, SE;
-  boolean divided = false;
+  float Bx, By, H;
+  int capacity, elementCount;
+  Boid elements[];
+  QuadTree subs[] = new QuadTree[4];
   
-  QuadTree(Rect boundary, int capacity) {
-    this.bounds = boundary;
-    this.capacity = capacity;
-    this.elements = new ArrayList<Boid>();
+  
+  QuadTree(float x, float y, float h, int cap) {
+    elements = new Boid[cap];
+    elementCount = 0;
+    capacity = cap;
+    Bx = x; By = y;
+    H = h;
   }
   
-  void buildTree(Boid[] points) {
-    this.clear();
-    for(int i = 0; i < points.length; i++) {
-      Boid point = points[i];
-      this.insert(point);
+  void buildTree(ArrayList<Boid> party) {
+    reset();
+    for(var member : party) insert(member);
+  }
+  
+  void reset() {
+    elements = new Boid[capacity];
+    elementCount = 0;
+    subs = new QuadTree[4];
+  }
+  
+  Boid[] query(float x, float y, float r) {
+    if(elementCount == 0 || !Circle.intersectsSquare(x, y, r, Bx, By, H)) return null;
+    ArrayList<Boid> out = new ArrayList();
+    
+    for(int i = 0; i < elements.length; i++) 
+      if(Circle.containsParticle(x, y, r, elements[i])) 
+        out.add(elements[i]);
+    
+    if(subs[0] == null) return out.toArray(new Boid[out.size()]);
+    
+    for(var sub : subs) sub.query(x, y, r, out);
+    
+    return out.toArray(new Boid[out.size()]);
+  }
+  private void query(float x, float y, float r, ArrayList<Boid> out) {
+    if(elementCount == 0 || !Circle.intersectsSquare(x, y, r, Bx, By, H)) return;
+    
+    for(int i = 0; i < elements.length; i++) 
+      if(Circle.containsParticle(x, y, r, elements[i])) out.add(elements[i]);
+  }
+  
+  boolean insert(Boid member) {
+    if(!Square.containsParticle(Bx, By, H, member)) return false;
+    
+    if(elementCount < capacity && subs[0] == null) {
+      elements[elementCount] = member;
+      return true;
     }
-  }
-  
-  void setCapacity(int newCapacity) {
-    if(newCapacity != this.capacity) {
-      this.capacity = newCapacity;
-    }
-  }
-  
-  void clear() {
-    this.elements.clear();
-    this.NW = null;
-    this.NE = null;
-    this.SW = null;
-    this.SE = null;
-    this.divided = false;
-  }
-  
-  Boid[] query(Circle range) {
-    ArrayList<Boid> found = new ArrayList<Boid>();
-    if(!this.bounds.intersectsCircle(range)) {
-        return null;
-    } else {
-        if(this.divided) {
-            this.NW.query(range, found);
-            this.NE.query(range, found);
-            this.SW.query(range, found);
-            this.SE.query(range, found);
-        } else {
-            for(int i = 0; i < this.elements.size(); i++) {
-                Boid p = this.elements.get(i);
-                if(range.contains(p)) {
-                    found.add(p);
-                }
-            }
-        }
-    }
-
-    return found.toArray(new Boid[found.size()]);
-  }
-  
-  ArrayList<Boid> query(Circle range, ArrayList<Boid> found) {
-    if(!this.bounds.intersects(new Rect(range.x, range.y, range.r, range.r))) {
-        return null;
-    } else {
-        if(this.divided) {
-            this.NW.query(range, found);
-            this.NE.query(range, found);
-            this.SW.query(range, found);
-            this.SE.query(range, found);
-        } else {
-            for(int i = 0; i < this.elements.size(); i++) {
-                Boid p = this.elements.get(i);
-                if(range.contains(p)) {
-                    found.add(p);
-                }
-            }
-        }
-    }
-
-    return found;
-  }
-  
-  void show() {
-    this.bounds.show();
-    if(this.divided) {
-        this.NW.show();
-        this.NE.show();
-        this.SW.show();
-        this.SE.show();
-    }
+    
+    if(subs[0] == null) subdivide();
+    
+    for(var sub : subs) 
+      if(sub.insert(member)) return true;
+    
+    return false;
   }
   
   void subdivide() {
-    float x = this.bounds.x, y = this.bounds.y, w = this.bounds.w, h = this.bounds.h;
-    Rect NW = new Rect(x - w / 2, y - h / 2, w / 2, h / 2);
-    this.NW = new QuadTree(NW, this.capacity);
-    Rect NE = new Rect(x + w / 2, y - h / 2, w / 2, h / 2);
-    this.NE = new QuadTree(NE, this.capacity);
-    Rect SW = new Rect(x - w / 2, y + h / 2, w / 2, h / 2);
-    this.SW = new QuadTree(SW, this.capacity);
-    Rect SE = new Rect(x + w / 2, y + h / 2, w / 2, h / 2);
-    this.SE = new QuadTree(SE, this.capacity);
-    this.divided = true;
-  }
-  
-  boolean insert(Boid point) {
-    if(!this.bounds.contains(point)) {
-        return false;
-    }
-
-    if(this.divided) {
-        if(this.NW.insert(point)) {
-            return true;
-        } else if(this.NE.insert(point)) {
-            return true;
-        } else if(this.SW.insert(point)) {
-            return true;
-        } else if(this.SE.insert(point)) {
-            return true;
-        }
-    } else {
-        this.elements.add(point);
-        if(this.elements.size() > this.capacity) {
-            this.subdivide();
-            for(int i = 0; i < this.elements.size(); i++) {
-                Boid pnt = this.elements.get(i);
-                if(this.NW.insert(pnt)) {
-                    continue;
-                } else if(this.NE.insert(pnt)) {
-                    continue;
-                } else if(this.SW.insert(pnt)) {
-                    continue;
-                } else if(this.SE.insert(pnt)) {
-                    continue;
-                }
-            }
-            this.elements.clear();
-            return true;
-        }
-    }
-    return false;
-  }
-}
-
-class Circle {
-  float x, y, r;
-  Circle(float x, float y, float r) {
-    this.x = x;
-    this.y = y;
-    this.r = r;
-  }
-  
-  boolean contains(Boid point) {
-    float dx = abs(point.pos.x - this.x);
-    if(dx > this.r) {
-        return false;
-    }
-    float dy = abs(point.pos.y - this.y);
-    if(dy > this.r) {
-        return false;
-    }
-    if(dx + dy <= this.r) {
-        return true;
-    }
-    return (dx*dx) + (dy*dy) <= (this.r * this.r);
-  }
-}
-
-class Rect {
-  float x, y, w, h;
-  Rect(float x, float y, float w, float h) {
-    this.x = x;
-    this.y = y;
-    this.w = w;
-    this.h = h;
-  }
-  
-  boolean intersectsCircle(Circle circle) {
-    PVector circleDistance = new PVector();
+    subs[0] = new QuadTree(Bx - H/2, By + H/2, H/2, capacity);
+    subs[1] = new QuadTree(Bx + H/2, By + H/2, H/2, capacity);
+    subs[2] = new QuadTree(Bx - H/2, By - H/2, H/2, capacity);
+    subs[3] = new QuadTree(Bx + H/2, By - H/2, H/2, capacity);
     
-    circleDistance.x = abs(circle.x - this.x);
-    if (circleDistance.x > (this.w/2 + circle.r)) { return false; }
-    
-    circleDistance.y = abs(circle.y - this.y);
-    if (circleDistance.y > (this.h /2 + circle.r)) { return false; }
-
-    if (circleDistance.x <= (this.w/2)) { return true; } 
-    if (circleDistance.y <= (this.h/2)) { return true; }
-
-    float cornerDistance_sq = sq((circleDistance.x - this.w / 2)) +
-                         sq((circleDistance.y - this.h / 2));
-
-    return (cornerDistance_sq <= (sq(circle.r)));
-  }
-  
-  boolean contains(Boid point) {
-    return !(abs(point.pos.x - this.x) > this.w ||
-             abs(point.pos.y - this.y) > this.h);
-  }
-  
-  boolean intersects(Rect other) {
-    return !(abs(this.x - other.x) > this.w + other.w || 
-             abs(this.y - other.y) > this.h + other.h);
-  }
-  
-  void show() {
-    push();
-    stroke(30);
-    rectMode(RADIUS);
-    translate(this.x, this.y);
-    rect(0, 0, this.w, this.h);
-    pop();
+    for(var ele : elements) {
+      for(var sub : subs) {
+        if(sub.insert(ele)) break;
+      }
+    }
+    elements = null;
+    elementCount = 0;
   }
 }
