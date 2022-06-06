@@ -41,21 +41,13 @@ class PQTree {
   float Bx, By, H;
   ArrayList<Particle> elements;
   PQTree[] subs = new PQTree[4];
-  PQTree par = null;
   
   PQTree(float x, float y, float h, int cap) {
     elements = new ArrayList(cap);
     elementCount = 0;
     Bx = x; By = y;
     H = h;
-    capacity = cap;
-  }
-  PQTree(PQTree parent, float x, float y, float h, int cap) {
-    par = parent;
-    elements = new ArrayList(cap);
-    elementCount = 0;
-    Bx = x; By = y;
-    H = h;
+    
     capacity = cap;
   }
   
@@ -117,10 +109,10 @@ class PQTree {
   }
   
   void subdivide() {
-    subs[0] = new PQTree(this, Bx - H/2, By + H/2, H/2, capacity);
-    subs[1] = new PQTree(this, Bx + H/2, By + H/2, H/2, capacity);
-    subs[2] = new PQTree(this, Bx - H/2, By - H/2, H/2, capacity);
-    subs[3] = new PQTree(this, Bx + H/2, By - H/2, H/2, capacity);
+    subs[0] = new PQTree(Bx - H/2, By + H/2, H/2, capacity);
+    subs[1] = new PQTree(Bx + H/2, By + H/2, H/2, capacity);
+    subs[2] = new PQTree(Bx - H/2, By - H/2, H/2, capacity);
+    subs[3] = new PQTree(Bx + H/2, By - H/2, H/2, capacity);
     
     for(var ele : elements) {
       int i = 0;

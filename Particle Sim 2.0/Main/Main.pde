@@ -11,28 +11,27 @@ void setup() {
   Layer lay = party.addLayer(new Layer(party) {
     void show() {
       push();
-      colorMode(HSB, 360, 100, 100, 100);
+      colorMode(RGB, 100);
       
       for(var mem : party) {
-        int countNeighbors = queryRadius(mem.x, mem.y, 3).length - 1;
+        int countNeighbors = queryRadius(mem.x, mem.y, 10.25).length - 1;
         
         strokeWeight(2.75);
         
-        stroke(33,
-               82, 
-               100, 
-               30 + 9 * countNeighbors);
+        stroke(#D38735, 
+               100 - 50 * countNeighbors); // 0 - 4 -> 100 - 0 -> 100 + -25 * countNeighbors
         
         point(mem.x, mem.y);
       }
       pop();
-    } 
+    }
   });
-    
+  lay.MaxSpeed = 15;
+  lay.MaxForce = 2.5;
   lay.Separate = true;
   lay.SepRadius = 50;
-  lay.setCount(500);
-  lay.MassMin = 2;
+  lay.setCount(750);
+  lay.MassMin = 1.75;
   lay.MassMax = 2.5;  
   lay.Expire = false;
   
@@ -42,95 +41,26 @@ void setup() {
       colorMode(RGB, 100);
       
       for(var mem : party) {
-        int countNeighbors = queryRadius(mem.x, mem.y, 4).length - 1;
+        int countNeighbors = queryRadius(mem.x, mem.y, 10.25).length - 1;
         
-        stroke(30 + 9 * countNeighbors, 15);
-        strokeWeight(3);
+        strokeWeight(2.75);
+        
+        stroke(#DB570B, 
+               4 * countNeighbors); 
+        
         point(mem.x, mem.y);
       }
       pop();
-    } 
+    }
   });
-  
+  lay.MaxSpeed = 15;
+  lay.MaxForce = 2.5;
   lay.Separate = true;
-  lay.setCount(1800);
-  lay.MassMin = 3;
-  lay.MassMax = 4;
+  lay.SepRadius = 10;
+  lay.setCount(1750);
+  lay.MassMin = 1.75;
+  lay.MassMax = 2.5;  
   lay.Expire = false;
-  
-  lay = party.addLayer(new Layer(party) {
-    void show() {
-      push();
-      colorMode(HSB, 360, 100, 100, 100);
-      
-      for(var mem : party) {
-        int countNeighbors = queryRadius(mem.x, mem.y, 1.6).length - 1;
-        
-        stroke(8, 88, 97, 30 + 9 * countNeighbors);
-        strokeWeight(3);
-        point(mem.x, mem.y);
-      }
-      pop();
-    } 
-  });
-  
-  lay.Separate = true;
-  lay.setCount(2200);
-  lay.MassMin = 1.5;
-  lay.MassMax = 3;
-  lay.Expire = false;
-  
-  lay = party.addLayer(new Layer(party) {
-    void show() {
-      push();
-      colorMode(HSB, 360, 100, 100, 100);
-      
-      for(var mem : party) {
-        int countNeighbors = queryRadius(mem.x, mem.y, 1).length - 1;
-        
-        stroke(16, 100, 100, 30 + 9 * countNeighbors);
-        strokeWeight(3);
-        point(mem.x, mem.y);
-      }
-      pop();
-    } 
-  });
-  
-  lay.Separate = true;
-  lay.SepRadius = 2;
-  lay.SepStrength = 0.2;
-  lay.setCount(1500);
-  lay.MaxSpeed = 9;
-  lay.MaxForce = 0.8;
-  lay.MassMin = 1.5;
-  lay.MassMax = 3.5;
-  lay.Expire = false;
-  
-  lay = party.addLayer(new Layer(party) {
-    void show() {
-      push();
-      colorMode(HSB, 360, 100, 100, 100);
-      
-      for(var mem : party) {
-        int countNeighbors = queryRadius(mem.x, mem.y, 2).length - 1;
-        
-        stroke(16, 100, 100, 8.46153 + 0.76923 * countNeighbors);
-        strokeWeight(3);
-        point(mem.x, mem.y);
-      }
-      pop();
-    } 
-  });
-  
-  lay.Separate = true;
-  lay.SepRadius = 2;
-  lay.SepStrength = 2;
-  lay.setCount(200);
-  lay.MaxSpeed = 8.5;
-  lay.MaxForce = 2;
-  lay.MassMin = 2;
-  lay.MassMax = 2.3;
-  lay.Expire = true;
 }
 
 void draw() {

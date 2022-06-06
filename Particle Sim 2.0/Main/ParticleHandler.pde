@@ -26,7 +26,15 @@ class PartiParty {
   
   void show() {
     for(var lay : layers) lay.show();
-  } 
+  }
+  
+  Particle[] queryAllRadius(float x, float y, float r) {
+    ArrayList<Particle> out = new ArrayList();
+    
+    for(var lay : layers) for(var found : lay.queryRadius(x, y, r)) out.add(found);
+    
+    return out.toArray(new Particle[out.size()]);
+  }
 }
 
 class Layer {
