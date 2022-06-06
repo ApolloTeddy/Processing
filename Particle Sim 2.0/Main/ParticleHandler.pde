@@ -1,6 +1,36 @@
 class PartiParty {
-  ArrayList<Particle> party = new ArrayList();
   ArrayList<float[]> spawnPoints = new ArrayList();
+  ArrayList<Layer> layers = new ArrayList();
+  
+  void addSpawnpoint(float px, float py) {
+    spawnPoints.add(new float[] {px, py});
+  }
+  void addSpawnpoints(float... points) {
+    if(points.length % 2 != 0) return;
+    
+    for(int i = 0; i < points.length-1; i += 2) addSpawnpoint(points[i], points[i+1]);
+  }
+  
+  Layer addLayer(Layer lay) {
+    layers.add(lay);
+    return lay;
+  }
+  
+  void goTo(float x, float y) {
+    for(var lay : layers) lay.goTo(x, y); 
+  }
+  
+  void run() {
+    for(var lay : layers) lay.updateLayer();
+  }
+  
+  void show() {
+    for(var lay : layers) lay.show();
+  } 
+}
+
+class Layer {
+  ArrayList<Particle> party = new ArrayList();
   int memberCount = 0;
   
   PQTree tree = new PQTree(width/2, height/2, width/2, 75*2);
@@ -13,9 +43,15 @@ class PartiParty {
         SepRadius = 3, SepStrength = 0.3;
   boolean Expire = true, RespawnOnExpire = true, Separate = true;
   
-  void show() {
-    for(var mem : party) point(mem.x, mem.y);
-  } 
+  PartiParty par;
+  
+  Layer(PartiParty parent) {
+    par = parent;
+  }
+  
+  Particle[] queryRadius(float x, float y, float r) {
+    return tree.queryRadius(x, y, r);
+  }
   
   void setCount(int count) {
     while(memberCount < count) {
@@ -30,14 +66,8 @@ class PartiParty {
     }
   }
   
-  void addSpawnpoint(float px, float py) {
-    spawnPoints.add(new float[] {px, py});
-  }
-  void addSpawnpoints(float... points) {
-    if(points.length % 2 != 0) return;
-    for(int i = 0; i < points.length-1; i += 2) {
-      spawnPoints.add(new float[] {points[i], points[i+1]}); 
-    }
+  void show() {
+    
   }
   
   void goTo(float x, float y) {
@@ -48,7 +78,7 @@ class PartiParty {
     }
   }
   
-  void run() {
+  void updateLayer() {
     for(int i = 0; i < memberCount; i++) {
       Particle mem = party.get(i);
       
@@ -57,7 +87,7 @@ class PartiParty {
           mem.updatePosition();
           break;
         case RESPAWNING:
-          float spawnPoint[] = spawnPoints.get(int(random(spawnPoints.size()))),
+          float spawnPoint[] = par.spawnPoints.get(int(random(par.spawnPoints.size()))),
                 t = random(TAU), d = random(SpawnRadius), d2 = rbou(SpawnVelMagMin, SpawnVelMagMax);
           
           mem.x = spawnPoint[0] + d * cos(t); mem.y = spawnPoint[1] + d * sin(t);
@@ -76,14 +106,6 @@ class PartiParty {
     }
     tree.buildTree(party);
   }
-  
-  Particle[] queryRadius(float x, float y, float r) {
-    return tree.queryRadius(x, y, r);
-  }
-}
-
-class Layer {
-  
 }
 
 class Particle {
@@ -96,11 +118,11 @@ class Particle {
   
   float mass;
   
-  PartiParty party;
+  Layer par;
   P_STATES state = P_STATES.RESPAWNING;
   
-  Particle(PartiParty parent) {
-    party = parent;
+  Particle(Layer parent) {
+    par = parent;
   }
   
   void init() {
@@ -112,16 +134,16 @@ class Particle {
   }
   
   void addForce(float fx, float fy) {
-    if(!validVector(fx, fy, party.MaxForce)) {
-      float newMag = setMagCoef(fx, fy, party.MaxForce);
+    if(!validVector(fx, fy, par.MaxForce)) {
+      float newMag = setMagCoef(fx, fy, par.MaxForce);
       
       fx *= newMag; fy *= newMag;
     }
     ax += fx/mass; ay += fy/mass;
   }
   void addForce(float fx, float fy, float amp) {
-    if(!validVector(fx, fy, party.MaxForce)) {
-      float newMag = setMagCoef(fx, fy, party.MaxForce);
+    if(!validVector(fx, fy, par.MaxForce)) {
+      float newMag = setMagCoef(fx, fy, par.MaxForce);
       
       fx *= newMag; fy *= newMag;
     }
@@ -129,8 +151,8 @@ class Particle {
   }
   
   void setVel(float fx, float fy) {
-    if(!validVector(fx, fy, party.MaxSpeed)) {
-      float newMag = setMagCoef(fx, fy, party.MaxSpeed);
+    if(!validVector(fx, fy, par.MaxSpeed)) {
+      float newMag = setMagCoef(fx, fy, par.MaxSpeed);
       
       fx *= newMag; fy *= newMag;
     }
@@ -139,14 +161,14 @@ class Particle {
   
   void expiry() {
     if(System.nanoTime() > expireTime) {
-      if(party.RespawnOnExpire) state = P_STATES.RESPAWNING;
+      if(par.RespawnOnExpire) state = P_STATES.RESPAWNING;
       else state = P_STATES.DELETE;
     }
   }
   
   void accelerationForces() {
-    if(party.Separate) { //<>//
-      Particle[] others = party.queryRadius(x, y, party.SepRadius);
+    if(par.Separate) { //<>//
+      Particle[] others = par.queryRadius(x, y, par.SepRadius);
       if(others.length < 2) return;
       
       float avx = 0, avy = 0;
@@ -159,11 +181,11 @@ class Particle {
         dx /= sqdist; dy /= sqdist;
         avx += dx; avy += dy;
       }
-      float d = setMagCoef(avx, avy, party.MaxForce);
+      float d = setMagCoef(avx, avy, par.MaxForce);
       
       avx *= d; avy *= d;
       
-      addForce(avx, avy, party.SepStrength);
+      addForce(avx, avy, par.SepStrength);
     }
   }
   
@@ -172,8 +194,8 @@ class Particle {
     
     vx += ax; vy += ay;
     
-    if(!validVector(vx, vy, party.MaxSpeed)) {
-      float newMag = setMagCoef(vx, vy, party.MaxSpeed);
+    if(!validVector(vx, vy, par.MaxSpeed)) {
+      float newMag = setMagCoef(vx, vy, par.MaxSpeed);
       
       vx *= newMag; vy *= newMag;
     }
@@ -181,6 +203,6 @@ class Particle {
     x += vx; y += vy;
     ax = 0; ay = 0;
     
-    if(party.Expire) expiry();
+    if(par.Expire) expiry();
   }
 }
