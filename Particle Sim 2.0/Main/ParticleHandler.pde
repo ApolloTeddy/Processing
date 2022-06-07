@@ -28,6 +28,13 @@ class PartiParty {
     for(var lay : layers) lay.show();
   }
   
+  void swapDrawOrder(int indA, int indB) {
+    var tmp = layers.get(indA);
+    
+    layers.set(indA, layers.get(indB));
+    layers.set(indB, tmp);
+  }
+  
   Particle[] queryAllRadius(float x, float y, float r) {
     ArrayList<Particle> out = new ArrayList();
     
@@ -143,7 +150,7 @@ class Particle {
   
   void addForce(float fx, float fy) {
     if(!validVector(fx, fy, par.MaxForce)) {
-      float newMag = setMagCoef(fx, fy, par.MaxForce);
+      var newMag = setMagCoef(fx, fy, par.MaxForce);
       
       fx *= newMag; fy *= newMag;
     }
@@ -151,7 +158,7 @@ class Particle {
   }
   void addForce(float fx, float fy, float amp) {
     if(!validVector(fx, fy, par.MaxForce)) {
-      float newMag = setMagCoef(fx, fy, par.MaxForce);
+      var newMag = setMagCoef(fx, fy, par.MaxForce);
       
       fx *= newMag; fy *= newMag;
     }
@@ -160,7 +167,7 @@ class Particle {
   
   void setVel(float fx, float fy) {
     if(!validVector(fx, fy, par.MaxSpeed)) {
-      float newMag = setMagCoef(fx, fy, par.MaxSpeed);
+      var newMag = setMagCoef(fx, fy, par.MaxSpeed);
       
       fx *= newMag; fy *= newMag;
     }
@@ -189,7 +196,7 @@ class Particle {
         dx /= sqdist; dy /= sqdist;
         avx += dx; avy += dy;
       }
-      float d = setMagCoef(avx, avy, par.MaxForce);
+      var d = setMagCoef(avx, avy, par.MaxForce);
       
       avx *= d; avy *= d;
       
@@ -203,7 +210,7 @@ class Particle {
     vx += ax; vy += ay;
     
     if(!validVector(vx, vy, par.MaxSpeed)) {
-      float newMag = setMagCoef(vx, vy, par.MaxSpeed);
+      var newMag = setMagCoef(vx, vy, par.MaxSpeed);
       
       vx *= newMag; vy *= newMag;
     }

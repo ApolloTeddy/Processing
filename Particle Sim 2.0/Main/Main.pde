@@ -63,6 +63,8 @@ void setup() {
   lay.MassMin = 1.75;
   lay.MassMax = 2.5;  
   lay.Expire = false;
+  
+  party.swapDrawOrder(0, 1);
 }
 
 void draw() {
