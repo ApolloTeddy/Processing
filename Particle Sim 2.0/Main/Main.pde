@@ -11,15 +11,17 @@ void setup() {
   Layer lay = party.addLayer(new Layer(party) {
     void show() {
       push();
-      colorMode(RGB, 100);
+      colorMode(HSB, 360, 100, 100, 100);
       
       for(var mem : party) {
-        int countNeighbors = queryRadius(mem.x, mem.y, 10.25).length - 1;
+        int countNeighbors = par.queryAllRadius(mem.x, mem.y, 10.25).length - 1;
         
         strokeWeight(2.75);
         
-        stroke(#D38735, 
-               100 - 50 * countNeighbors); // 0 - 4 -> 100 - 0 -> 100 + -25 * countNeighbors
+        stroke(195,
+               15 + 40.5 * countNeighbors, 
+               100, 
+               100 - 25 * countNeighbors); // 0 - 4 -> 100 - 0 -> 100 + -25 * countNeighbors
         
         point(mem.x, mem.y);
       }
@@ -45,8 +47,8 @@ void setup() {
         
         strokeWeight(2.75);
         
-        stroke(#DB570B, 
-               4 * countNeighbors); 
+        stroke(#27E7FF, 
+               3 * countNeighbors); 
         
         point(mem.x, mem.y);
       }
