@@ -28,7 +28,7 @@ class PartiParty {
     for(var lay : layers) lay.show();
   }
   
-  void swapDrawOrder(int indA, int indB) {
+  void swapLayerOrder(int indA, int indB) {
     var tmp = layers.get(indA);
     
     layers.set(indA, layers.get(indB));
@@ -48,7 +48,7 @@ class Layer {
   ArrayList<Particle> party = new ArrayList();
   int memberCount = 0;
   
-  PQTree tree = new PQTree(width/2, height/2, width/2, 75*2);
+  PQTree tree;
   
   float ParticleLifetime = 7, LifetimeVariance = 3,
         MaxSpeed = 7, MaxForce = 0.6, 
@@ -60,7 +60,8 @@ class Layer {
   
   PartiParty par;
   
-  Layer(PartiParty parent) {
+  Layer(PartiParty parent, int QTCap, float QTMinsize) {
+    tree = new PQTree(width/2, height/2, width/2, QTCap, QTMinsize);
     par = parent;
   }
   
@@ -202,7 +203,7 @@ class Particle {
       
       addForce(avx, avy, par.SepStrength);
     }
-  }
+  } //<>//
   
   void updatePosition() {
     accelerationForces();

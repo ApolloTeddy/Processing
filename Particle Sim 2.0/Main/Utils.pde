@@ -38,15 +38,16 @@ enum P_STATES {
 
 class PQTree {
   int capacity, elementCount;
-  float Bx, By, H;
+  float Bx, By, H, mH;
   ArrayList<Particle> elements;
   PQTree[] subs = new PQTree[4];
   
-  PQTree(float x, float y, float h, int cap) {
+  PQTree(float x, float y, float h, int cap, float minsize) {
     elements = new ArrayList(cap);
     elementCount = 0;
     Bx = x; By = y;
     H = h;
+    mH = minsize;
     
     capacity = cap;
   }
@@ -71,7 +72,7 @@ class PQTree {
   boolean insert(Particle p) {
     if(!Square.containsParticle(Bx, By, H, p)) return false;
     
-    boolean c1 = subs[0] == null, c2 = H > 0.1;
+    boolean c1 = subs[0] == null, c2 = H > mH;
     if(c1 && c2 && elementCount < capacity) {
       elements.add(p);
       elementCount++;
@@ -109,10 +110,10 @@ class PQTree {
   }
   
   void subdivide() {
-    subs[0] = new PQTree(Bx - H/2, By + H/2, H/2, capacity);
-    subs[1] = new PQTree(Bx + H/2, By + H/2, H/2, capacity);
-    subs[2] = new PQTree(Bx - H/2, By - H/2, H/2, capacity);
-    subs[3] = new PQTree(Bx + H/2, By - H/2, H/2, capacity);
+    subs[0] = new PQTree(Bx - H/2, By + H/2, H/2, capacity, mH);
+    subs[1] = new PQTree(Bx + H/2, By + H/2, H/2, capacity, mH);
+    subs[2] = new PQTree(Bx - H/2, By - H/2, H/2, capacity, mH);
+    subs[3] = new PQTree(Bx + H/2, By - H/2, H/2, capacity, mH);
     
     for(var ele : elements) {
       int i = 0;
