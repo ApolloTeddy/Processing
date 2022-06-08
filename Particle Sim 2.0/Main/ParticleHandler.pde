@@ -16,8 +16,110 @@ class PartiParty {
     return lay;
   }
   
-  void goTo(float x, float y) {
-    for(var lay : layers) lay.goTo(x, y); 
+  void preset(int index) {
+    Layer lay;
+    switch(index) {
+      case 1:
+        for(float t = 0; t < TAU; t += TAU/12) addSpawnpoint(width/2 + width/2.5 * cos(t), height/2 + width/2.5 * sin(t));
+      
+        lay = addLayer(new Layer(party, 175, 4) {
+          void show() {
+            push();
+            colorMode(RGB, 100);
+            
+            for(var mem : party) {
+              strokeWeight(2.75);
+              
+              stroke(#27E7FF, 
+                     3 * (queryRadius(mem.x, mem.y, 10.25).length - 1)); 
+              
+              point(mem.x, mem.y);
+            }
+            pop();
+          }
+        });
+        lay.MaxSpeed = 15;
+        lay.MaxForce = 2.5;
+        lay.Separate = true;
+        lay.SepRadius = 10;
+        lay.setCount(1750);
+        lay.MassMin = 1.75;
+        lay.MassMax = 2.5;  
+        lay.Expire = false;
+        
+        lay = addLayer(new Layer(party, 75, 3) {
+          void show() {
+            push();
+            colorMode(HSB, 360, 100, 100, 100);
+            
+            for(var mem : party) {
+              int countNeighbors = par.queryAllRadius(mem.x, mem.y, 10.25).length - 1;
+              
+              strokeWeight(2.75);
+              
+              stroke(195,
+                     15 + 40.5 * countNeighbors, 
+                     100, 
+                     100 - 25 * countNeighbors); // 0 - 4 -> 100 - 0 -> 100 + -25 * countNeighbors
+              
+              point(mem.x, mem.y);
+            }
+            pop();
+          }
+        });
+        lay.MaxSpeed = 15;
+        lay.MaxForce = 2.5;
+        lay.Separate = true;
+        lay.SepRadius = 50;
+        lay.setCount(750);
+        lay.MassMin = 1.75;
+        lay.MassMax = 2.5;  
+        lay.Expire = false;
+        break;
+      case 2:
+        int dx = width/25, dy = height/25;
+        for(int x = dx; x < width; x += dx) for(int y = dy; y < height; y += dy) party.addSpawnpoint(x, y);
+      
+        lay = party.addLayer(new Layer(party, 15, 3) {
+          void show() {
+            push();
+            colorMode(RGB, 100);
+            strokeCap(ROUND);
+            
+            for(var mem : party) {
+              //strokeWeight(4.25);
+              
+              //stroke(100, 20); 
+              //point(mem.x, mem.y);
+              
+              for(var n : queryRadius(mem.x, mem.y, 100)) {
+                if(n == mem) continue;
+                float sqdist = sq(mem.x - n.x) + sq(mem.y - n.y);
+                
+                strokeWeight(4 - 0.0003 * sqdist);
+                stroke(100, 30 - 0.003 * sqdist);
+                
+                line(mem.x, mem.y, n.x, n.y);
+              }
+            }
+            pop();
+          }
+        });
+        lay.setCount(125);
+        lay.Separate = false;
+        lay.MaxSpeed = 1.25;
+        lay.SpawnVelMagMax = 3.5;
+        lay.SpawnVelMagMin = 3.5;
+        lay.MassMin = 1;
+        lay.MassMax = 1;
+        lay.ParticleLifetime = 8;
+        lay.LifetimeVariance = 5;
+        break;
+    }
+  }
+  
+  void goTo(float x, float y, float... amp) {
+    for(var lay : layers) lay.goTo(x, y, amp); 
   }
   
   void run() {
@@ -29,6 +131,7 @@ class PartiParty {
   }
   
   void swapLayerOrder(int indA, int indB) {
+    if(indA < 0 || indB < 0 || layers.size() < 1 || indA > layers.size()-1 || indB > layers.size() - 1) return;
     var tmp = layers.get(indA);
     
     layers.set(indA, layers.get(indB));
@@ -95,11 +198,11 @@ class Layer {
     
   }
   
-  void goTo(float x, float y) {
+  void goTo(float x, float y, float... amp) {
     for(var mem : party) {
       float fx = x - mem.x, fy = y - mem.y;
       
-      mem.addForce(fx, fy);
+      if(amp.length < 1) mem.addForce(fx, fy); else mem.addForce(fx, fy, amp[0]);
     }
   }
   
@@ -116,7 +219,6 @@ class Layer {
                 t = random(TAU), d = random(SpawnRadius), d2 = rbou(SpawnVelMagMin, SpawnVelMagMax);
           
           mem.x = spawnPoint[0] + d * cos(t); mem.y = spawnPoint[1] + d * sin(t);
-          
           mem.mass = rbou(MassMin, MassMax);
           
           mem.init();
