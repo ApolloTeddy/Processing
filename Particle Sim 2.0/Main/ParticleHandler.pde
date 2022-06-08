@@ -35,6 +35,15 @@ class PartiParty {
     layers.set(indB, tmp);
   }
   
+  Particle[] queryLayersRadius(float x, float y, float r, int... layerIndices) {
+    ArrayList<Particle> out = new ArrayList();
+    
+    for(int i = 0; i < layerIndices.length; i++) 
+      for(var found : layers.get(layerIndices[i]).queryRadius(x, y, r)) out.add(found);
+    
+    return out.toArray(new Particle[out.size()]);
+  }
+  
   Particle[] queryAllRadius(float x, float y, float r) {
     ArrayList<Particle> out = new ArrayList();
     
@@ -60,8 +69,8 @@ class Layer {
   
   PartiParty par;
   
-  Layer(PartiParty parent, int QTCap, float QTMinsize) {
-    tree = new PQTree(width/2, height/2, width/2, QTCap, QTMinsize);
+  Layer(PartiParty parent, int QTCap, int QTMaxdepth) {
+    tree = new PQTree(width/2, height/2, width/2, QTCap, QTMaxdepth);
     par = parent;
   }
   
@@ -194,7 +203,7 @@ class Particle {
         float dx = x - other.x, dy = y - other.y,
               sqdist = dx*dx + dy*dy;
         
-        dx /= sqdist; dy /= sqdist;
+        dx /= sqdist; dy /= sqdist; //<>//
         avx += dx; avy += dy;
       }
       var d = setMagCoef(avx, avy, par.MaxForce);
@@ -203,7 +212,7 @@ class Particle {
       
       addForce(avx, avy, par.SepStrength);
     }
-  } //<>//
+  }
   
   void updatePosition() {
     accelerationForces();

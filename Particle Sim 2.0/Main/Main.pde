@@ -8,7 +8,7 @@ void setup() {
   
   for(float t = 0; t < TAU; t += TAU/12) party.addSpawnpoint(width/2 + 300 * cos(t), height/2 + 300 * sin(t));
   
-  Layer lay = party.addLayer(new Layer(party, 50, 75) {
+  Layer lay = party.addLayer(new Layer(party, 75, 3) {
     void show() {
       push();
       colorMode(HSB, 360, 100, 100, 100);
@@ -37,7 +37,7 @@ void setup() {
   lay.MassMax = 2.5;  
   lay.Expire = false;
   
-  lay = party.addLayer(new Layer(party, 150, 35) {
+  lay = party.addLayer(new Layer(party, 175, 4) {
     void show() {
       push();
       colorMode(RGB, 100);
@@ -68,11 +68,11 @@ void setup() {
 }
 
 void draw() {
-  background(40); //<>// //<>//
+  background(40); //<>//
   text(frameRate, 10, 10);
   
   party.goTo(mouseX, mouseY);
   party.run();
   
-  party.show(); //<>// //<>//
+  party.show(); //<>//
 }
