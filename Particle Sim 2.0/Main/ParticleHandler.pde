@@ -108,7 +108,7 @@ class PartiParty {
         int dx = width/25, dy = height/25;
         for(int x = dx; x < width; x += dx) for(int y = dy; y < height; y += dy) party.addSpawnpoint(x, y);
       
-        lay = party.addLayer(new Layer(party, 15, 4) {
+        lay = party.addLayer(new Layer(party, 10, 4) {
           void show() {
             push();
             colorMode(RGB, 100);
@@ -120,12 +120,12 @@ class PartiParty {
               //stroke(100, 20); 
               //point(mem.x, mem.y);
               
-              for(var n : queryRadius(mem.x, mem.y, 125)) {
+              for(var n : queryRadius(mem.x, mem.y, 150)) { // 
                 if(n == mem) continue;
                 float sqdist = sq(mem.x - n.x) + sq(mem.y - n.y);
                 
-                strokeWeight(map(sqdist, 0, 15625, 4, 0));
-                stroke(#FFE200, map(sqdist, 0, 15625, 30, 0));
+                strokeWeight(map(sqdist, 0, 22500, 4, 0));
+                stroke(#FFFF00, map(sqdist, 0, 22500, 30, 0));
                 
                 line(mem.x, mem.y, n.x, n.y);
               }
@@ -133,16 +133,16 @@ class PartiParty {
             pop();
           }
         });
-        lay.setCount(100);
+        lay.setCount(60);
         
-        lay.setSetting(p.MaxSpeed, 2.25);
+        lay.setSetting(p.MaxSpeed, 1.75);
         lay.setSetting(p.Separate, false);
         lay.setSetting(p.SpawnVelMagMin, 0.25);
-        lay.setSetting(p.SpawnVelMagMax, 2.25);
+        lay.setSetting(p.SpawnVelMagMax, 1.75);
         lay.setSetting(p.MassMin, 1);
         lay.setSetting(p.MassMax, 1);  
-        lay.setSetting(p.ParticleLifetime, 6);
-        lay.setSetting(p.LifetimeVariance, 2);
+        lay.setSetting(p.ParticleLifetime, 2);
+        lay.setSetting(p.LifetimeVariance, 3);
         break;
     }
   }
@@ -294,7 +294,7 @@ class Particle {
         vx, vy,
         ax, ay;
         
-  long spawnTime,
+  long spawnTime, //<>//
        expireTime;
   
   float mass;
@@ -305,7 +305,7 @@ class Particle {
   Particle(Layer parent) {
     par = parent;
   }
-  
+   //<>//
   void init() {
     vx = 0; vy = 0;
     ax = 0; ay = 0;

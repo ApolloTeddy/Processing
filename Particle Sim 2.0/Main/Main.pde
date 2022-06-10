@@ -12,13 +12,11 @@ void setup() {
   party = new PartiParty();
   
   party.preset(2);
-  
-  background(#200069);
 }
 
 void draw() {
   pg.beginDraw();
-  pg.background(#200069, 25);
+  pg.background(#240155, 25); //<>//
   pg.endDraw();
   text(frameRate, 10, 10);
   
@@ -26,4 +24,4 @@ void draw() {
   
   party.show();
   image(pg, 0, 0);
-}
+} //<>//
