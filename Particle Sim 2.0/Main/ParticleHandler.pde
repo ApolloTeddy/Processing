@@ -1,3 +1,29 @@
+static class p {
+  static final int Expire = 0,
+                   RespawnOnExpire = 1,
+                   Separate = 2,
+                   
+                   ParticleLifetime = 3,
+                   LifetimeVariance = 4,
+                   MaxSpeed = 5,
+                   MaxForce = 6,
+                   SpawnRadius = 7,
+                   SpawnVelMagMin = 8,
+                   SpawnVelMagMax = 9,
+                   MassMin = 10,
+                   MassMax = 11,
+                   SepRadius = 12,
+                   SepStrength = 13;
+                   
+  static final int NumBoolSettings = 3;
+}
+
+/*
+
+
+
+*/
+
 class PartiParty {
   ArrayList<float[]> spawnPoints = new ArrayList();
   ArrayList<Layer> layers = new ArrayList();
@@ -38,14 +64,15 @@ class PartiParty {
             pop();
           }
         });
-        lay.MaxSpeed = 15;
-        lay.MaxForce = 2.5;
-        lay.Separate = true;
-        lay.SepRadius = 10;
         lay.setCount(1750);
-        lay.MassMin = 1.75;
-        lay.MassMax = 2.5;  
-        lay.Expire = false;
+        
+        lay.setSetting(p.MaxSpeed, 15);
+        lay.setSetting(p.MaxForce, 2.5);
+        lay.setSetting(p.Separate, true);
+        lay.setSetting(p.SepRadius, 10);
+        lay.setSetting(p.MassMin, 1.75);
+        lay.setSetting(p.MassMax, 2.5);  
+        lay.setSetting(p.Expire, false);
         
         lay = addLayer(new Layer(party, 75, 3) {
           void show() {
@@ -67,20 +94,21 @@ class PartiParty {
             pop();
           }
         });
-        lay.MaxSpeed = 15;
-        lay.MaxForce = 2.5;
-        lay.Separate = true;
-        lay.SepRadius = 50;
         lay.setCount(750);
-        lay.MassMin = 1.75;
-        lay.MassMax = 2.5;  
-        lay.Expire = false;
+        
+        lay.setSetting(p.MaxSpeed, 15);
+        lay.setSetting(p.MaxForce, 2.5);
+        lay.setSetting(p.Separate, true);
+        lay.setSetting(p.SepRadius, 50);
+        lay.setSetting(p.MassMin, 1.75);
+        lay.setSetting(p.MassMax, 2.5);  
+        lay.setSetting(p.Expire, false);
         break;
       case 2:
         int dx = width/25, dy = height/25;
         for(int x = dx; x < width; x += dx) for(int y = dy; y < height; y += dy) party.addSpawnpoint(x, y);
       
-        lay = party.addLayer(new Layer(party, 15, 3) {
+        lay = party.addLayer(new Layer(party, 15, 4) {
           void show() {
             push();
             colorMode(RGB, 100);
@@ -92,12 +120,12 @@ class PartiParty {
               //stroke(100, 20); 
               //point(mem.x, mem.y);
               
-              for(var n : queryRadius(mem.x, mem.y, 100)) {
+              for(var n : queryRadius(mem.x, mem.y, 125)) {
                 if(n == mem) continue;
                 float sqdist = sq(mem.x - n.x) + sq(mem.y - n.y);
                 
-                strokeWeight(4 - 0.0003 * sqdist);
-                stroke(100, 30 - 0.003 * sqdist);
+                strokeWeight(map(sqdist, 0, 15625, 4, 0));
+                stroke(#FFE200, map(sqdist, 0, 15625, 30, 0));
                 
                 line(mem.x, mem.y, n.x, n.y);
               }
@@ -105,15 +133,16 @@ class PartiParty {
             pop();
           }
         });
-        lay.setCount(125);
-        lay.Separate = false;
-        lay.MaxSpeed = 1.25;
-        lay.SpawnVelMagMax = 3.5;
-        lay.SpawnVelMagMin = 3.5;
-        lay.MassMin = 1;
-        lay.MassMax = 1;
-        lay.ParticleLifetime = 8;
-        lay.LifetimeVariance = 5;
+        lay.setCount(100);
+        
+        lay.setSetting(p.MaxSpeed, 2.25);
+        lay.setSetting(p.Separate, false);
+        lay.setSetting(p.SpawnVelMagMin, 0.25);
+        lay.setSetting(p.SpawnVelMagMax, 2.25);
+        lay.setSetting(p.MassMin, 1);
+        lay.setSetting(p.MassMax, 1);  
+        lay.setSetting(p.ParticleLifetime, 6);
+        lay.setSetting(p.LifetimeVariance, 2);
         break;
     }
   }
@@ -162,13 +191,30 @@ class Layer {
   
   PQTree tree;
   
-  float ParticleLifetime = 7, LifetimeVariance = 3,
-        MaxSpeed = 7, MaxForce = 0.6, 
-        SpawnRadius = 50,
-        SpawnVelMagMin = 1, SpawnVelMagMax = 2.5,
-        MassMin = 0.5, MassMax = 2,
-        SepRadius = 3, SepStrength = 0.3;
-  boolean Expire = true, RespawnOnExpire = true, Separate = true;
+  float[] floatSettings = { 7, 3,    // ParticleLifetime, LifetimeVariance
+                            7, 0.6,  // MaxSpeed, MaxForce
+                            50,      // SpawnRadius
+                            1, 2.5,  // SpawnVelMagMin, SpawnVelMagMax
+                            0.5, 2,  // MassMin, MassMax
+                            3, 0.3 };// SepRadius, SepStrength
+                            
+  boolean[] boolSettings = { true,   // Expire
+                             true,   // RespawnOnExpire
+                             true }; // Separate
+ 
+  void setSetting(int Setting, float value) {
+    floatSettings[Setting - p.NumBoolSettings] = value;
+  }
+  void setSetting(int Setting, boolean value) {
+    boolSettings[Setting] = value;
+  }
+  
+  float getSettingf(int Setting) {
+    return floatSettings[Setting - p.NumBoolSettings];
+  }
+  boolean getSettingb(int Setting) {
+    return boolSettings[Setting];
+  }
   
   PartiParty par;
   
@@ -207,6 +253,14 @@ class Layer {
   }
   
   void updateLayer() {
+    float SpawnRadius = getSettingf(p.SpawnRadius),
+          SpawnVelMagMin = getSettingf(p.SpawnVelMagMin),
+          SpawnVelMagMax = getSettingf(p.SpawnVelMagMax),
+          MassMin = getSettingf(p.MassMin),
+          MassMax = getSettingf(p.MassMax),
+          ParticleLifetime = getSettingf(p.ParticleLifetime),
+          LifetimeVariance = getSettingf(p.LifetimeVariance);
+    
     for(int i = 0; i < memberCount; i++) {
       Particle mem = party.get(i);
       
@@ -261,16 +315,18 @@ class Particle {
   }
   
   void addForce(float fx, float fy) {
-    if(!validVector(fx, fy, par.MaxForce)) {
-      var newMag = setMagCoef(fx, fy, par.MaxForce);
+    float mF = par.getSettingf(p.MaxForce);
+    if(!validVector(fx, fy, mF)) {
+      var newMag = setMagCoef(fx, fy, mF);
       
       fx *= newMag; fy *= newMag;
     }
     ax += fx/mass; ay += fy/mass;
   }
   void addForce(float fx, float fy, float amp) {
-    if(!validVector(fx, fy, par.MaxForce)) {
-      var newMag = setMagCoef(fx, fy, par.MaxForce);
+    float mF = par.getSettingf(p.MaxForce);
+    if(!validVector(fx, fy, mF)) {
+      var newMag = setMagCoef(fx, fy, mF);
       
       fx *= newMag; fy *= newMag;
     }
@@ -278,8 +334,9 @@ class Particle {
   }
   
   void setVel(float fx, float fy) {
-    if(!validVector(fx, fy, par.MaxSpeed)) {
-      var newMag = setMagCoef(fx, fy, par.MaxSpeed);
+    float mS = par.getSettingf(p.MaxSpeed);
+    if(!validVector(fx, fy, mS)) {
+      var newMag = setMagCoef(fx, fy, mS);
       
       fx *= newMag; fy *= newMag;
     }
@@ -288,14 +345,14 @@ class Particle {
   
   void expiry() {
     if(System.nanoTime() > expireTime) {
-      if(par.RespawnOnExpire) state = P_STATES.RESPAWNING;
+      if(par.getSettingb(p.RespawnOnExpire)) state = P_STATES.RESPAWNING;
       else state = P_STATES.DELETE;
     }
   }
   
   void accelerationForces() {
-    if(par.Separate) { //<>//
-      Particle[] others = par.queryRadius(x, y, par.SepRadius);
+    if(par.getSettingb(p.Separate)) { //<>//
+      Particle[] others = par.queryRadius(x, y, par.getSettingf(p.SepRadius));
       if(others.length < 2) return;
       
       float avx = 0, avy = 0;
@@ -308,11 +365,11 @@ class Particle {
         dx /= sqdist; dy /= sqdist; //<>//
         avx += dx; avy += dy;
       }
-      var d = setMagCoef(avx, avy, par.MaxForce);
+      var d = setMagCoef(avx, avy, par.getSettingf(p.MaxForce));
       
       avx *= d; avy *= d;
       
-      addForce(avx, avy, par.SepStrength);
+      addForce(avx, avy, par.getSettingf(p.SepStrength));
     }
   }
   
@@ -321,8 +378,9 @@ class Particle {
     
     vx += ax; vy += ay;
     
-    if(!validVector(vx, vy, par.MaxSpeed)) {
-      var newMag = setMagCoef(vx, vy, par.MaxSpeed);
+    float mS = par.getSettingf(p.MaxSpeed);
+    if(!validVector(vx, vy, mS)) {
+      var newMag = setMagCoef(vx, vy, mS);
       
       vx *= newMag; vy *= newMag;
     }
@@ -330,6 +388,6 @@ class Particle {
     x += vx; y += vy;
     ax = 0; ay = 0;
     
-    if(par.Expire) expiry();
+    if(par.getSettingb(p.Expire)) expiry();
   }
 }
