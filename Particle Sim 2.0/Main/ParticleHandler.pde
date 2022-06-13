@@ -2,20 +2,21 @@ static class p {
   static final int Expire = 0,
                    RespawnOnExpire = 1,
                    Separate = 2,
+                   LoopEdges = 3,
                    
-                   ParticleLifetime = 3,
-                   LifetimeVariance = 4,
-                   MaxSpeed = 5,
-                   MaxForce = 6,
-                   SpawnRadius = 7,
-                   SpawnVelMagMin = 8,
-                   SpawnVelMagMax = 9,
-                   MassMin = 10,
-                   MassMax = 11,
-                   SepRadius = 12,
-                   SepStrength = 13;
+                   ParticleLifetime = 4,
+                   LifetimeVariance = 5,
+                   MaxSpeed = 6,
+                   MaxForce = 7,
+                   SpawnRadius = 8,
+                   SpawnVelMagMin = 9,
+                   SpawnVelMagMax = 10,
+                   MassMin = 11,
+                   MassMax = 12,
+                   SepRadius = 13,
+                   SepStrength = 14;
                    
-  static final int NumBoolSettings = 3;
+  static final int NumBoolSettings = 4;
 }
 enum P_STATES {
   ALIVE,
@@ -209,7 +210,8 @@ class Layer {
                             
   boolean[] boolSettings = { true,   // Expire
                              true,   // RespawnOnExpire
-                             true }; // Separate
+                             true,   // Separate
+                             false}; // LoopEdges
  
   void setSetting(int Setting, float value) {
     floatSettings[Setting - p.NumBoolSettings] = value;
@@ -325,23 +327,15 @@ class Particle {
     spawnTime = System.nanoTime();
   }
   
-  void addForce(float fx, float fy) {
+  void addForce(float fx, float fy, float... amp) {
     float mF = par.getSettingf(p.MaxForce);
     if(!validVector(fx, fy, mF)) {
       var newMag = setMagCoef(fx, fy, mF);
       
       fx *= newMag; fy *= newMag;
     }
-    ax += fx/mass; ay += fy/mass;
-  }
-  void addForce(float fx, float fy, float amp) {
-    float mF = par.getSettingf(p.MaxForce);
-    if(!validVector(fx, fy, mF)) {
-      var newMag = setMagCoef(fx, fy, mF);
-      
-      fx *= newMag; fy *= newMag;
-    }
-    ax += (amp*fx)/mass; ay += (amp*fy)/mass;
+    if(amp.length == 0) { ax += fx/mass; ay += fy/mass; }
+    else { ax += (amp[0]*fx)/mass; ay += (amp[0]*fy)/mass; }
   }
   
   void setVel(float fx, float fy) {
@@ -355,10 +349,8 @@ class Particle {
   }
   
   void expiry() {
-    if(System.nanoTime() > expireTime) {
-      if(par.getSettingb(p.RespawnOnExpire)) state = P_STATES.RESPAWNING;
-      else state = P_STATES.DELETE;
-    }
+    if(par.getSettingb(p.RespawnOnExpire)) state = P_STATES.RESPAWNING;
+    else state = P_STATES.DELETE;
   }
   
   void accelerationForces() {
@@ -399,6 +391,13 @@ class Particle {
     x += vx; y += vy;
     ax = 0; ay = 0;
     
-    if(par.getSettingb(p.Expire)) expiry();
+    if(par.getSettingb(p.LoopEdges)) {
+      if(x > width) x = 1;
+      if(x < 0) x = width-1;
+      if(y > height) y = 1;
+      if(y < 0) y = height-1;
+    }
+    
+    if(System.nanoTime() > expireTime && par.getSettingb(p.Expire)) expiry();
   }
 }
