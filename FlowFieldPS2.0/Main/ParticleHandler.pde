@@ -305,8 +305,9 @@ class Layer {
 
 class Particle {
   float x, y,
+        px, py,
         vx, vy,
-        ax, ay; //<>//
+        ax, ay;
         
   long spawnTime, //<>//
        expireTime;
@@ -317,10 +318,11 @@ class Particle {
   P_STATES state = P_STATES.RESPAWNING;
   
   Particle(Layer parent) {
-    par = parent; //<>//
+    par = parent;
   }
    //<>//
   void init() {
+    px = x; py = y;
     vx = 0; vy = 0;
     ax = 0; ay = 0;
     
@@ -340,7 +342,6 @@ class Particle {
   }
   void addForcePV(PVector f, float... amp) {
     float mF = par.getSettingf(p.MaxForce), fx = f.x, fy = f.y;
-    
     if(!validVector(fx, fy, mF)) {
       f.setMag(mF);
     }
@@ -361,7 +362,7 @@ class Particle {
   void expiry() {
     if(par.getSettingb(p.RespawnOnExpire)) state = P_STATES.RESPAWNING;
     else state = P_STATES.DELETE;
-  } //<>//
+  }
   
   void accelerationForces() {
     if(par.getSettingb(p.Separate)) { //<>//
@@ -372,7 +373,7 @@ class Particle {
       
       for(var other : others) {
         if(other == this) continue;
-        float dx = x - other.x, dy = y - other.y, //<>//
+        float dx = x - other.x, dy = y - other.y,
               sqdist = dx*dx + dy*dy;
         
         dx /= sqdist; dy /= sqdist; //<>//
@@ -387,6 +388,8 @@ class Particle {
   }
   
   void updatePosition() {
+    px = x; py = y;
+    
     accelerationForces();
     
     vx += ax; vy += ay;
@@ -402,10 +405,20 @@ class Particle {
     ax = 0; ay = 0;
     
     if(par.getSettingb(p.LoopEdges)) {
-      if(x > width) x = 1;
-      if(x < 0) x = width-1;
-      if(y > height) y = 1;
-      if(y < 0) y = height-1;
+      if(x > width) {
+        x = 0;
+        px = 0;
+      } else if(x < 0) {
+        x = width;
+        px = width;
+      }
+      if(y > height) {
+        y = 0;
+        py = 0;
+      } else if(y < 0) {
+        y = height;
+        py = height;
+      }
     }
     
     if(System.nanoTime() > expireTime && par.getSettingb(p.Expire)) expiry();

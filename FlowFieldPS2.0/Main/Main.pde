@@ -4,9 +4,11 @@ Layer lay;
 FieldManager fHandler;
 
 int spawnPadding = 200;
+float inc = PI/35;
 
 void setup() {
   size(700, 700);
+  strokeCap(ROUND);
   graphics = createGraphics(width, height);
   
   pHandler = new PartiParty();
@@ -14,27 +16,27 @@ void setup() {
   
   lay = pHandler.addLayer(new Layer(pHandler, 0, 0) {
     void show() {
-      for(var mem : party) {
-        graphics.point(mem.x, mem.y);
+      for(var mem : party) { //<>//
+        graphics.line(mem.px, mem.py, mem.x, mem.y);
       }
     }
   });
   
-  particles = lay.setCount(2500);
+  particles = lay.setCount(1000);
   
-  lay.setSetting(p.SpawnVelMagMax, 15);
-  lay.setSetting(p.MaxSpeed, 3);
-  lay.setSetting(p.MaxForce, 1);
+  lay.setSetting(p.SpawnVelMagMax, 10);
+  lay.setSetting(p.MaxSpeed, 15);
+  lay.setSetting(p.MaxForce, 2.25);
   lay.setSetting(p.LoopEdges, true);
   lay.setSetting(p.Expire, false);
   /*pHandler.addSpawnpoints(spawnPadding, spawnPadding,
                           width - spawnPadding, height - spawnPadding,
                           spawnPadding, height - spawnPadding,
                           width - spawnPadding, spawnPadding);
-  */pHandler.addSpawnpoint(width/2, height/2);
+  */pHandler.addSpawnpoint(random(width), random(height));
   fHandler.populate();
   
-  noiseDetail(12, 0.5);
+  noiseDetail(4, 0.5);
 }
 
 PGraphics graphics;
@@ -47,13 +49,13 @@ void draw() {
   
   pHandler.run();
   
-  //strokeWeight(1);
-  //stroke(50);
-  //fHandler.show();
+  strokeWeight(1);
+  stroke(50);
+  fHandler.show();
   
   graphics.beginDraw();
-  graphics.strokeWeight(1);
-  graphics.stroke(#FFE600, 10);
+  graphics.strokeWeight(3);
+  graphics.stroke(#FFE600, 1);
   pHandler.show();
   graphics.endDraw();
 
@@ -93,15 +95,17 @@ class FieldManager {
     return field[roundedX][roundedY];
   }
   
-  PVector generateVector(float x, float y) {
-    return PVector.fromAngle(noise(x / 300, y / 300) * TAU);
-  }
-  
   void populate() {
+    float yoff = 0;
     for(int y = 0; y < resH; y++) {
+      float xoff = 0;
       for(int x = 0; x < resW; x++) {
-        field[x][y] = generateVector(x * resW, y * resH);
+        float theta = noise(xoff, yoff) * TAU;
+        field[x][y] = PVector.fromAngle(theta).setMag(0.5);
+        
+        xoff += inc;
       }
+      yoff += inc;
     }
   }
 }

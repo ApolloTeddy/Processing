@@ -238,7 +238,7 @@ class Layer {
     return tree.queryRadius(x, y, r);
   }
   
-  void setCount(int count) {
+  ArrayList<Particle> setCount(int count) {
     while(memberCount < count) {
       Particle p = new Particle(this);
       party.add(p);
@@ -249,6 +249,7 @@ class Layer {
       party.remove(memberCount);
       memberCount--;
     }
+    return party;
   }
   
   void show() {
@@ -304,6 +305,7 @@ class Layer {
 
 class Particle {
   float x, y,
+        px, py,
         vx, vy,
         ax, ay;
         
@@ -320,6 +322,7 @@ class Particle {
   }
    //<>//
   void init() {
+    px = x; py = y;
     vx = 0; vy = 0;
     ax = 0; ay = 0;
     
@@ -333,6 +336,14 @@ class Particle {
       var newMag = setMagCoef(fx, fy, mF);
       
       fx *= newMag; fy *= newMag;
+    }
+    if(amp.length == 0) { ax += fx/mass; ay += fy/mass; }
+    else { ax += (amp[0]*fx)/mass; ay += (amp[0]*fy)/mass; }
+  }
+  void addForcePV(PVector f, float... amp) {
+    float mF = par.getSettingf(p.MaxForce), fx = f.x, fy = f.y;
+    if(!validVector(fx, fy, mF)) {
+      f.setMag(mF);
     }
     if(amp.length == 0) { ax += fx/mass; ay += fy/mass; }
     else { ax += (amp[0]*fx)/mass; ay += (amp[0]*fy)/mass; }
@@ -377,6 +388,8 @@ class Particle {
   }
   
   void updatePosition() {
+    px = x; py = y;
+    
     accelerationForces();
     
     vx += ax; vy += ay;
@@ -392,10 +405,20 @@ class Particle {
     ax = 0; ay = 0;
     
     if(par.getSettingb(p.LoopEdges)) {
-      if(x > width) x = 1;
-      if(x < 0) x = width-1;
-      if(y > height) y = 1;
-      if(y < 0) y = height-1;
+      if(x > width) {
+        x = 0;
+        px = 0;
+      } else if(x < 0) {
+        x = width;
+        px = width;
+      }
+      if(y > height) {
+        y = 0;
+        py = 0;
+      } else if(y < 0) {
+        y = height;
+        py = height;
+      }
     }
     
     if(System.nanoTime() > expireTime && par.getSettingb(p.Expire)) expiry();
