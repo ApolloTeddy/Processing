@@ -3,21 +3,28 @@ static class p {
                    RespawnOnExpire = 1,
                    Separate = 2,
                    LoopEdges = 3,
+                   RandomizeMaxSpeed = 4,
+                   RandomizeMaxForce = 5,
                    
-                   ParticleLifetime = 4,
-                   LifetimeVariance = 5,
-                   MaxSpeed = 6,
-                   MaxForce = 7,
-                   SpawnRadius = 8,
-                   SpawnVelMagMin = 9,
-                   SpawnVelMagMax = 10,
-                   MassMin = 11,
-                   MassMax = 12,
-                   SepRadius = 13,
-                   SepStrength = 14;
+                   ParticleLifetime = 6,
+                   LifetimeVariance = 7,
+                   MaxSpeed = 8,
+                   MaxSpeedMin = 9,
+                   MaxSpeedMax = 10,
+                   MaxForce = 11,
+                   MaxForceMin = 12,
+                   MaxForceMax = 13,
+                   SpawnRadius = 14,
+                   SpawnVelMagMin = 15,
+                   SpawnVelMagMax = 16,
+                   MassMin = 17,
+                   MassMax = 18,
+                   SepRadius = 19,
+                   SepStrength = 20;
                    
-  static final int NumBoolSettings = 4;
+  static final int NumBoolSettings = 6;
 }
+
 enum P_STATES {
   ALIVE,
   RESPAWNING,
@@ -201,17 +208,20 @@ class Layer {
   
   PQTree tree;
   
-  float[] floatSettings = { 7, 3,    // ParticleLifetime, LifetimeVariance
-                            7, 0.6,  // MaxSpeed, MaxForce
-                            50,      // SpawnRadius
-                            1, 2.5,  // SpawnVelMagMin, SpawnVelMagMax
-                            0.5, 2,  // MassMin, MassMax
-                            3, 0.3 };// SepRadius, SepStrength
+  float[] floatSettings = { 7, 3,          // ParticleLifetime, LifetimeVariance
+                            7, 5, 7,       // MaxSpeed, Min, Max
+                            0.6, 0.5, 0.7, // MaxForce, Min, Max
+                            50,            // SpawnRadius
+                            1, 2.5,        // SpawnVelMagMin, SpawnVelMagMax
+                            0.5, 2,        // MassMin, MassMax
+                            3, 0.3 };      // SepRadius, SepStrength
                             
   boolean[] boolSettings = { true,   // Expire
                              true,   // RespawnOnExpire
                              true,   // Separate
-                             false}; // LoopEdges
+                             false,  // LoopEdges
+                             false,  // RandomizeMaxSpeed 
+                             false };// RandomizeMaxForce
  
   void setSetting(int Setting, float value) {
     floatSettings[Setting - p.NumBoolSettings] = value;
@@ -273,7 +283,13 @@ class Layer {
           MassMin = getSettingf(p.MassMin),
           MassMax = getSettingf(p.MassMax),
           ParticleLifetime = getSettingf(p.ParticleLifetime),
-          LifetimeVariance = getSettingf(p.LifetimeVariance);
+          LifetimeVariance = getSettingf(p.LifetimeVariance),
+          MaxSpeed = getSettingf(p.MaxSpeed),
+          MaxSpeedMin = getSettingf(p.MaxSpeedMin),
+          MaxSpeedMax = getSettingf(p.MaxSpeedMax),
+          MaxForce = getSettingf(p.MaxForce),
+          MaxForceMin = getSettingf(p.MaxForceMin),
+          MaxForceMax = getSettingf(p.MaxForceMax);
     
     for(int i = 0; i < memberCount; i++) {
       Particle mem = party.get(i);
@@ -288,6 +304,12 @@ class Layer {
           
           mem.x = spawnPoint[0] + d * cos(t); mem.y = spawnPoint[1] + d * sin(t);
           mem.mass = rbou(MassMin, MassMax);
+          
+          if(boolSettings[p.RandomizeMaxSpeed]) mem.maxspeed = rbou(MaxSpeedMin, MaxSpeedMax);
+          else mem.maxspeed = MaxSpeed;
+          
+          if(boolSettings[p.RandomizeMaxForce]) mem.maxforce = rbou(MaxForceMin, MaxForceMax);
+          else mem.maxforce = MaxForce;
           
           mem.init();
           mem.setVel(d2 * cos(t), d2 * sin(t));
@@ -312,7 +334,7 @@ class Particle {
   long spawnTime, //<>//
        expireTime;
   
-  float mass;
+  float mass, maxspeed, maxforce;
   
   Layer par;
   P_STATES state = P_STATES.RESPAWNING;
@@ -331,9 +353,8 @@ class Particle {
   }
   
   void addForce(float fx, float fy, float... amp) {
-    float mF = par.getSettingf(p.MaxForce);
-    if(!validVector(fx, fy, mF)) {
-      var newMag = setMagCoef(fx, fy, mF);
+    if(!validVector(fx, fy, maxforce)) {
+      var newMag = setMagCoef(fx, fy, maxforce);
       
       fx *= newMag; fy *= newMag;
     }
@@ -341,18 +362,17 @@ class Particle {
     else { ax += (amp[0]*fx)/mass; ay += (amp[0]*fy)/mass; }
   }
   void addForcePV(PVector f, float... amp) {
-    float mF = par.getSettingf(p.MaxForce), fx = f.x, fy = f.y;
-    if(!validVector(fx, fy, mF)) {
-      f.setMag(mF);
+    float fx = f.x, fy = f.y;
+    if(!validVector(fx, fy, maxforce)) {
+      f.setMag(maxforce);
     }
     if(amp.length == 0) { ax += fx/mass; ay += fy/mass; }
     else { ax += (amp[0]*fx)/mass; ay += (amp[0]*fy)/mass; }
   }
   
   void setVel(float fx, float fy) {
-    float mS = par.getSettingf(p.MaxSpeed);
-    if(!validVector(fx, fy, mS)) {
-      var newMag = setMagCoef(fx, fy, mS);
+    if(!validVector(fx, fy, maxspeed)) {
+      var newMag = setMagCoef(fx, fy, maxspeed);
       
       fx *= newMag; fy *= newMag;
     }
@@ -379,7 +399,7 @@ class Particle {
         dx /= sqdist; dy /= sqdist; //<>//
         avx += dx; avy += dy;
       }
-      var d = setMagCoef(avx, avy, par.getSettingf(p.MaxForce));
+      var d = setMagCoef(avx, avy, maxforce);
       
       avx *= d; avy *= d;
       
@@ -394,9 +414,8 @@ class Particle {
     
     vx += ax; vy += ay;
     
-    float mS = par.getSettingf(p.MaxSpeed);
-    if(!validVector(vx, vy, mS)) {
-      var newMag = setMagCoef(vx, vy, mS);
+    if(!validVector(vx, vy, maxspeed)) {
+      var newMag = setMagCoef(vx, vy, maxspeed);
       
       vx *= newMag; vy *= newMag;
     }

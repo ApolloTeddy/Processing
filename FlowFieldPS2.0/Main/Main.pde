@@ -8,7 +8,7 @@ float inc = PI/35;
 
 void setup() {
   size(700, 700);
-  strokeCap(ROUND);
+  strokeCap(PROJECT);
   graphics = createGraphics(width, height);
   
   pHandler = new PartiParty();
@@ -17,7 +17,7 @@ void setup() {
   lay = pHandler.addLayer(new Layer(pHandler, 0, 0) {
     void show() {
       for(var mem : party) { //<>//
-        graphics.line(mem.px, mem.py, mem.x, mem.y);
+        graphics.line(mem.x, mem.y, mem.px, mem.py);
       }
     }
   });
@@ -25,7 +25,7 @@ void setup() {
   particles = lay.setCount(1000);
   
   lay.setSetting(p.SpawnVelMagMax, 10);
-  lay.setSetting(p.MaxSpeed, 15);
+  lay.setSetting(p.MaxSpeed, 10);
   lay.setSetting(p.MaxForce, 2.25);
   lay.setSetting(p.LoopEdges, true);
   lay.setSetting(p.Expire, false);
@@ -54,8 +54,8 @@ void draw() {
   fHandler.show();
   
   graphics.beginDraw();
-  graphics.strokeWeight(3);
-  graphics.stroke(#FFE600, 1);
+  graphics.strokeWeight(1);
+  graphics.stroke(#FFE600, 5);
   pHandler.show();
   graphics.endDraw();
 
