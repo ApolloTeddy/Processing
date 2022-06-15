@@ -6,7 +6,7 @@ static class p {
                    RandomizeMaxSpeed = 4,
                    RandomizeMaxForce = 5,
                    
-                   ParticleLifetime = 6,
+                   Lifetime = 6,
                    LifetimeVariance = 7,
                    MaxSpeed = 8,
                    MaxSpeedMin = 9,
@@ -154,7 +154,7 @@ class PartiParty {
         lay.setSetting(p.SpawnVelMagMax, 1.75);
         lay.setSetting(p.MassMin, 1);
         lay.setSetting(p.MassMax, 1);  
-        lay.setSetting(p.ParticleLifetime, 2);
+        lay.setSetting(p.Lifetime, 2);
         lay.setSetting(p.LifetimeVariance, 3);
         break;
     }
@@ -212,7 +212,7 @@ class Layer {
                             7, 5, 7,       // MaxSpeed, Min, Max
                             0.6, 0.5, 0.7, // MaxForce, Min, Max
                             50,            // SpawnRadius
-                            1, 2.5,        // SpawnVelMagMin, SpawnVelMagMax
+                            0, 2.5,        // SpawnVelMagMin, SpawnVelMagMax
                             0.5, 2,        // MassMin, MassMax
                             3, 0.3 };      // SepRadius, SepStrength
                             
@@ -282,7 +282,7 @@ class Layer {
           SpawnVelMagMax = getSettingf(p.SpawnVelMagMax),
           MassMin = getSettingf(p.MassMin),
           MassMax = getSettingf(p.MassMax),
-          ParticleLifetime = getSettingf(p.ParticleLifetime),
+          Lifetime = getSettingf(p.Lifetime),
           LifetimeVariance = getSettingf(p.LifetimeVariance),
           MaxSpeed = getSettingf(p.MaxSpeed),
           MaxSpeedMin = getSettingf(p.MaxSpeedMin),
@@ -309,18 +309,18 @@ class Layer {
           else mem.maxspeed = MaxSpeed;
           
           if(boolSettings[p.RandomizeMaxForce]) mem.maxforce = rbou(MaxForceMin, MaxForceMax);
-          else mem.maxforce = MaxForce;
+          else mem.maxforce = MaxForce; //<>//
           
           mem.init();
           mem.setVel(d2 * cos(t), d2 * sin(t));
-          mem.expireTime = mem.spawnTime + (long)((ParticleLifetime + rvar(LifetimeVariance)) * pow(10, 9));
+          mem.expireTime = mem.spawnTime + (long)((Lifetime + rvar(LifetimeVariance)) * pow(10, 9));
           break;
         case DELETE:
           party.remove(i);
           i--;
           break;
       }
-    }
+    } //<>//
     tree.buildTree(party);
   }
 }
@@ -365,7 +365,7 @@ class Particle {
     float fx = f.x, fy = f.y;
     if(!validVector(fx, fy, maxforce)) {
       f.setMag(maxforce);
-    }
+    } //<>//
     if(amp.length == 0) { ax += fx/mass; ay += fy/mass; }
     else { ax += (amp[0]*fx)/mass; ay += (amp[0]*fy)/mass; }
   }
@@ -376,7 +376,7 @@ class Particle {
       
       fx *= newMag; fy *= newMag;
     }
-    vx = fx; vy += fy;
+    vx = fx; vy += fy; //<>//
   }
   
   void expiry() {
