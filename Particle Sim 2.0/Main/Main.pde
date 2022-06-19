@@ -12,11 +12,17 @@ void setup() {
   party = new PartiParty();
   
   party.preset(2);
+  
+  Layer lay = party.layers.get(0);
+  
+  lay.setCount(10);
+  lay.setSetting(p.Tracer, true);
+  lay.setSetting(p.TracerVerticeCount, 25);
 }
 
 void draw() {
   pg.beginDraw();
-  pg.background(#240155, 25); //<>//
+  pg.background(#240155, 25);
   pg.endDraw();
   text(frameRate, 10, 10);
   
@@ -24,4 +30,4 @@ void draw() {
   
   party.show();
   image(pg, 0, 0);
-} //<>//
+}

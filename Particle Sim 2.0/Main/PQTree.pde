@@ -1,12 +1,11 @@
 class PQTree {
-  int capacity, elementCount, maxDepth, depth;
+  int capacity, maxDepth, depth;
   float Bx, By, H;
   ArrayList<Particle> elements;
   PQTree[] subs = new PQTree[4];
   
   PQTree(float x, float y, float h, int cap, int maxDep) {
     elements = new ArrayList(cap);
-    elementCount = 0;
     Bx = x; By = y;
     H = h;
     maxDepth = maxDep;
@@ -15,12 +14,11 @@ class PQTree {
     capacity = cap;
   }
   PQTree(PQTree parent, float x, float y, float h) {
-    elementCount = 0;
     Bx = x; By = y;
     H = h;
     
     maxDepth = parent.maxDepth;
-    this.depth = parent.depth + 1;
+    depth = parent.depth + 1;
     capacity = parent.capacity;
     elements = new ArrayList(capacity);
   }
@@ -32,7 +30,6 @@ class PQTree {
   
   void reset() {
     elements = new ArrayList();
-    elementCount = 0;
     subs = new PQTree[4];
   }
   
@@ -46,15 +43,13 @@ class PQTree {
     if(!Square.containsParticle(Bx, By, H, p)) return false;
     
     boolean c1 = subs[0] == null, c2 = depth < maxDepth;
-    if(c1 && c2 && elementCount < capacity) {
+    if(c1 && c2 && elements.size() < capacity) {
       elements.add(p);
-      elementCount++;
       return true;
     }
     
     if(c1 && !c2) {
       elements.add(p);
-      elementCount++;
       return true;
     }
     
@@ -94,6 +89,5 @@ class PQTree {
       while(i < 4 && !subs[i].insert(ele)) i++;
     }
     elements = null;
-    elementCount = 0;
   }
 }

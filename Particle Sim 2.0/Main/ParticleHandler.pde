@@ -5,24 +5,27 @@ static class p {
                    LoopEdges = 3,
                    RandomizeMaxSpeed = 4,
                    RandomizeMaxForce = 5,
+                   Tracer = 6,
                    
-                   Lifetime = 6,
-                   LifetimeVariance = 7,
-                   MaxSpeed = 8,
-                   MaxSpeedMin = 9,
-                   MaxSpeedMax = 10,
-                   MaxForce = 11,
-                   MaxForceMin = 12,
-                   MaxForceMax = 13,
-                   SpawnRadius = 14,
-                   SpawnVelMagMin = 15,
-                   SpawnVelMagMax = 16,
-                   MassMin = 17,
-                   MassMax = 18,
-                   SepRadius = 19,
-                   SepStrength = 20;
+                   Lifetime = 7,
+                   LifetimeVariance = 8,
+                   MaxSpeed = 9,
+                   MaxSpeedMin = 10,
+                   MaxSpeedMax = 11,
+                   MaxForce = 12,
+                   MaxForceMin = 13,
+                   MaxForceMax = 14,
+                   SpawnRadius = 15,
+                   SpawnVelMagMin = 16,
+                   SpawnVelMagMax = 17,
+                   MassMin = 18,
+                   MassMax = 19,
+                   SepRadius = 20,
+                   SepStrength = 21,
+                   TracerVerticeCount = 22,
+                   TracerExpireTime = 23;
                    
-  static final int NumBoolSettings = 6;
+  static final int NumBoolSettings = 7;
 }
 
 enum P_STATES {
@@ -128,6 +131,7 @@ class PartiParty {
             strokeCap(ROUND);
             
             for(var mem : party) {
+              if(mem.state != P_STATES.ALIVE) continue;
               //strokeWeight(4.25);
               
               //stroke(100, 20); 
@@ -188,7 +192,7 @@ class PartiParty {
     ArrayList<Particle> out = new ArrayList();
     
     for(int i = 0; i < layerIndices.length; i++) 
-      for(var found : layers.get(layerIndices[i]).queryRadius(x, y, r)) out.add(found);
+      for(var found : layers.get(layerIndices[i]).queryRadius(x, y, r)) if(found.state == P_STATES.ALIVE) out.add(found);
     
     return out.toArray(new Particle[out.size()]);
   }
@@ -196,7 +200,7 @@ class PartiParty {
   Particle[] queryAllRadius(float x, float y, float r) {
     ArrayList<Particle> out = new ArrayList();
     
-    for(var lay : layers) for(var found : lay.queryRadius(x, y, r)) out.add(found);
+    for(var lay : layers) for(var found : lay.queryRadius(x, y, r)) if(found.state == P_STATES.ALIVE) out.add(found);
     
     return out.toArray(new Particle[out.size()]);
   }
@@ -214,14 +218,16 @@ class Layer {
                             50,            // SpawnRadius
                             0, 2.5,        // SpawnVelMagMin, SpawnVelMagMax
                             0.5, 2,        // MassMin, MassMax
-                            3, 0.3 };      // SepRadius, SepStrength
+                            3, 0.3,        // SepRadius, SepStrength
+                            25, 0.01};    // TracerVerticeCount, TracerExpireTime
                             
   boolean[] boolSettings = { true,   // Expire
                              true,   // RespawnOnExpire
                              true,   // Separate
                              false,  // LoopEdges
                              false,  // RandomizeMaxSpeed 
-                             false };// RandomizeMaxForce
+                             false,  // RandomizeMaxForce
+                             false };// Tracer
  
   void setSetting(int Setting, float value) {
     floatSettings[Setting - p.NumBoolSettings] = value;
@@ -256,7 +262,7 @@ class Layer {
       tree.insert(p);
     }
     while(memberCount > count) {
-      party.remove(memberCount);
+      party.remove(memberCount-1);
       memberCount--;
     }
     return party;
@@ -289,16 +295,28 @@ class Layer {
           MaxSpeedMax = getSettingf(p.MaxSpeedMax),
           MaxForce = getSettingf(p.MaxForce),
           MaxForceMin = getSettingf(p.MaxForceMin),
-          MaxForceMax = getSettingf(p.MaxForceMax);
+          MaxForceMax = getSettingf(p.MaxForceMax),
+          TracerExpireTime = getSettingf(p.TracerExpireTime);
     
     for(int i = 0; i < memberCount; i++) {
       Particle mem = party.get(i);
+      boolean tracer = mem.tracerTrail != null;
+      
+      if(tracer) mem.showTrail();
       
       switch(mem.state){
         case ALIVE:
           mem.updatePosition();
           break;
-        case RESPAWNING:
+        case RESPAWNING:  
+          if(tracer && mem.tracerTrail.size() > 0) { //<>//
+            if(System.nanoTime() > mem.trailExpireTime) {
+              mem.tracerTrail.remove(0);
+              mem.trailExpireTime = System.nanoTime() + (long)(TracerExpireTime * pow(10, 9));
+            }
+            break;
+          }
+        
           float spawnPoint[] = par.spawnPoints.get(int(random(par.spawnPoints.size()))),
                 t = random(TAU), d = random(SpawnRadius), d2 = rbou(SpawnVelMagMin, SpawnVelMagMax);
           
@@ -332,9 +350,12 @@ class Particle {
         ax, ay;
         
   long spawnTime, //<>//
-       expireTime;
+       expireTime,
+       trailExpireTime;
   
   float mass, maxspeed, maxforce;
+  
+  ArrayList<float[]> tracerTrail;
   
   Layer par;
   P_STATES state = P_STATES.RESPAWNING;
@@ -348,8 +369,21 @@ class Particle {
     vx = 0; vy = 0;
     ax = 0; ay = 0;
     
+    if(par.getSettingb(p.Tracer)) tracerTrail = new ArrayList();
+    
     state = P_STATES.ALIVE;
     spawnTime = System.nanoTime();
+  }
+  
+  void showTrail() {
+    push();
+    noFill();
+    beginShape();
+    for(var p : tracerTrail) {
+      vertex(p[0], p[1]);
+    }
+    endShape();
+    pop();
   }
   
   void addForce(float fx, float fy, float... amp) {
@@ -385,7 +419,7 @@ class Particle {
   }
   
   void accelerationForces() {
-    if(par.getSettingb(p.Separate)) { //<>//
+    if(par.getSettingb(p.Separate)) {
       Particle[] others = par.queryRadius(x, y, par.getSettingf(p.SepRadius));
       if(others.length < 2) return;
       
@@ -396,7 +430,7 @@ class Particle {
         float dx = x - other.x, dy = y - other.y,
               sqdist = dx*dx + dy*dy;
         
-        dx /= sqdist; dy /= sqdist; //<>//
+        dx /= sqdist; dy /= sqdist;
         avx += dx; avy += dy;
       }
       var d = setMagCoef(avx, avy, maxforce);
@@ -437,6 +471,14 @@ class Particle {
       } else if(y < 0) {
         y = height;
         py = height;
+      }
+    }
+    
+    if(par.getSettingb(p.Tracer)) {
+      if(tracerTrail.size() < par.getSettingf(p.TracerVerticeCount)) tracerTrail.add(new float[] {px, py});
+      else {
+        tracerTrail.remove(0);
+        tracerTrail.add(new float[] {px, py});
       }
     }
     
