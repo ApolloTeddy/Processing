@@ -4,12 +4,12 @@ Layer lay;
 FieldManager fHandler;
 
 int spawnPadding = 200;
-float inc = PI/35, scale = 0.3, b = 8f/3, s = 10, r = 28;
+float inc = PI/35, scale = 0.3, b = 8f/3, s = 10, r = 28, k = 0.1;
 
 PVector slopeVector(float x, float y) {
   PVector out = new PVector();
   
-  out.set(y, -x); // (x : run, y : rise)
+  out.set(-x, -y); // (x : run, y : rise)
   
   return out;
 }
@@ -29,24 +29,16 @@ void setup() {
   graphics = createGraphics(width, height);
   
   pHandler = new PartiParty();
-  fHandler = new FieldManager(12) {
+  fHandler = new FieldManager(1) {
     void populate() {
-      float maximumMagnitude = 30;
       for(int y = 0; y < colsY; y++) {
         for(int x = 0; x < colsX; x++) {
-          PVector f;
           float px = x-colsX/2, py = y-colsY/2;
           
           field[x][y] = slopeVector(px * scale, py * scale);
-          f = field[x][y];
-          
-          if(sqMag(f.x, f.y) > sq(maximumMagnitude)) {
-            field[x][y].setMag(maximumMagnitude);
-            println("shortened");
-          }
         }
       }
-      findMax();
+      findMinAndMax();
       findAvgMag();
     }
   };
@@ -57,22 +49,22 @@ void setup() {
     }
   });
   
-  particles = lay.setCount(5000);
+  particles = lay.setCount(15000);
   
   lay.setSetting(p.SpawnVelMagMin, 0);
   lay.setSetting(p.SpawnVelMagMax, 0);
-  lay.setSetting(p.MaxSpeed, 2);
+  lay.setSetting(p.MaxSpeed, 3);
   lay.setSetting(p.MaxForce, 1);
   lay.setSetting(p.MassMin, 1);
   lay.setSetting(p.MassMax, 1);
   lay.setSetting(p.Lifetime, 10);
-  lay.setSetting(p.LifetimeVariance, 2);
+  lay.setSetting(p.LifetimeVariance, 6);
   lay.setSetting(p.Separate, false);
   lay.setSetting(p.Expire, true);
   lay.setSetting(p.RandomizeMaxSpeed, false);
   lay.setSetting(p.RandomizeMaxForce, false);
   lay.setSetting(p.Tracer, true);
-  lay.setSetting(p.TracerVerticeCount, 10);
+  lay.setSetting(p.TracerVerticeCount, 5);
   lay.setSetting(p.TracerExpireTime, 0.01);
   
   /*pHandler.addSpawnpoints(spawnPadding, spawnPadding,
@@ -88,6 +80,7 @@ void setup() {
   }
                           
   fHandler.populate();
+  fHandler.mapToRange(0, lay.getSettingf(p.MaxSpeed));
 }
 
 PGraphics graphics;
@@ -96,15 +89,7 @@ void draw() {
   
   for(var par : particles) {
     PVector force = fHandler.getVectorClosestTo(par.x, par.y); //<>//
-    float sqMag = sqMag(force.x, force.y);
-    float maxMag = fHandler.getMagMax();
-    float avgMag = fHandler.getAvgMag();
-    float ms = par.maxspeed;
-    
-    if(sqMag == Double.NaN || sqMag == Double.POSITIVE_INFINITY) sqMag = maxMag;
-    float newMag = maxMag/sqMag;
-    
-    force.setMag(newMag);
+
     par.setVel(force);
   }
   
@@ -121,7 +106,7 @@ void draw() {
 class FieldManager {
   PVector[][] field;
   int colsX, colsY, res;
-  float magMax = 0, avgMag = 0;
+  float magMax = 0, magMin = Float.MAX_VALUE, avgMag = 0;
   
   FieldManager(int res) {
     this.res = res;
@@ -150,9 +135,20 @@ class FieldManager {
                map(sqmag, 0, magMax/1.5f, 255, 0),
                0);
                
-        vec.setMag(5);
+        //vec.setMag(5);
         
         line(vox, voy, vox + vec.x, voy + vec.y);
+      }
+    }
+  }
+  
+  void mapToRange(float newMin, float newMax) {
+    findMinAndMax();
+    for(var c : field) {
+      for(var force : c) {
+        float newMag = map(sqMag(force.x, force.y), magMin, magMax, newMin, newMax);
+        
+        force.setMag(newMag);
       }
     }
   }
@@ -168,12 +164,14 @@ class FieldManager {
     return field[roundedX][roundedY];
   }
   
-  void findMax() {
+  void findMinAndMax() {
     magMax = 0; 
+    magMin = Float.MAX_VALUE;
     for(var c : field) 
       for(var r : c) {
         float mag = sqMag(r.x, r.y);
         if(mag > magMax) magMax = mag; 
+        if(mag < magMin) magMin = mag; 
       }
   }
   void findAvgMag() {
@@ -202,6 +200,6 @@ class FieldManager {
       yoff += inc; //<>//
     }
     
-    findMax();
+    findMinAndMax();
   }
 }
