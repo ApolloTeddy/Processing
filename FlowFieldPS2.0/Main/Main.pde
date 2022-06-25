@@ -9,7 +9,7 @@ float inc = PI/35, scale = 0.3, b = 8f/3, s = 10, r = 28, k = 0.1;
 PVector slopeVector(float x, float y) {
   PVector out = new PVector();
   
-  out.set(-x, -y); // (x : run, y : rise)
+  out.set(1, x - y); // (x : run, y : rise)
   
   return out;
 }
@@ -80,7 +80,7 @@ void setup() {
   }
                           
   fHandler.populate();
-  fHandler.mapToRange(0, lay.getSettingf(p.MaxSpeed));
+  fHandler.mapToRange(fHandler.magMin, lay.getSettingf(p.MaxSpeed));
 }
 
 PGraphics graphics;
